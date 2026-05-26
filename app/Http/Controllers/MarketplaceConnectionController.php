@@ -34,17 +34,20 @@ class MarketplaceConnectionController extends Controller
         ]);
 
         $platform = $validated['platform'];
-        $platform = $request->query('platform')
-            ?? session('oauth_platform');
 
-        // Redirect to OAuth URL based on platform
+        // SIMPAN PLATFORM DI SESSION
+        session(['oauth_platform' => $platform]);
+
         switch ($platform) {
             case 'shopee':
                 return redirect($this->getShopeeAuthUrl());
+
             case 'tokopedia':
                 return redirect($this->getTokopediaAuthUrl());
+
             case 'tiktok':
                 return redirect($this->getTiktokAuthUrl());
+
             case 'lazada':
                 return redirect($this->getLazadaAuthUrl());
         }

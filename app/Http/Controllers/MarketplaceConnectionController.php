@@ -60,6 +60,12 @@ class MarketplaceConnectionController extends Controller
 
             $code = $request->code;
 
+            if (!$code) {
+                return redirect()
+                    ->route('marketplace.connections')
+                    ->with('error', 'Authorization code tidak ditemukan');
+            }
+
             $tokenResponse = Http::get(
                 'https://auth.tiktok-shops.com/api/v2/token/get',
                 [
@@ -70,18 +76,53 @@ class MarketplaceConnectionController extends Controller
                 ]
             );
 
-            dd([
-                'status' => $tokenResponse->status(),
-                'json' => $tokenResponse->json(),
-                'body' => $tokenResponse->body(),
-            ]);
+            $response = $tokenResponse->json();
+
+            // cek gagal
+            if (($response['code'] ?? -1) != 0) {
+
+                return redirect()
+                    ->route('marketplace.connections')
+                    ->with('error', $response['message'] ?? 'Gagal koneksi TikTok');
+            }
+
+            $data = $response['data'];
+
+            MarketplaceAccount::updateOrCreate(
+                [
+                    'platform' => 'tiktok',
+                    'open_id' => $data['open_id'],
+                ],
+                [
+                    'shop_name' => $data['seller_name'] ?? null,
+                    'shop_region' => $data['seller_base_region'] ?? null,
+
+                    'access_token' => $data['access_token'],
+                    'refresh_token' => $data['refresh_token'],
+
+                    'token_expires_at' => date(
+                        'Y-m-d H:i:s',
+                        $data['access_token_expire_in']
+                    ),
+
+                    'refresh_token_expires_at' => date(
+                        'Y-m-d H:i:s',
+                        $data['refresh_token_expire_in']
+                    ),
+
+                    'status' => 'connected',
+                ]
+            );
+
+            return redirect()
+                ->route('marketplace.connections')
+                ->with('success', 'TikTok Shop berhasil terhubung');
+
         } catch (\Exception $e) {
 
-            dd([
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
-            ]);
+            return redirect()
+                ->route('marketplace.connections')
+                ->with('error', $e->getMessage());
         }
     }
 

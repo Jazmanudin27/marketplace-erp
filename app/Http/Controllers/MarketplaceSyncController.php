@@ -9,8 +9,8 @@ class MarketplaceSyncController extends Controller
 {
     public function syncProducts($id)
     {
-        $account = MarketplaceAccount::findOrFail($id);
-        echo $account;
+        // $account = MarketplaceAccount::findOrFail($id);
+        echo "Syncing products for marketplace account ID: $id";
         // try {
 
         //     $account = MarketplaceAccount::findOrFail($id);

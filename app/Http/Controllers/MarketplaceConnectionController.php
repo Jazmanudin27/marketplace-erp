@@ -51,40 +51,46 @@ class MarketplaceConnectionController extends Controller
 
     public function callback(Request $request)
     {
-        $platform = $request->query('platform');
         $code = $request->query('code');
-        $shop_id = $request->query('shop_id');
+
+        $platform = $request->query('platform')
+            ?? session('oauth_platform');
+
+        if (!$platform) {
+            return redirect()->route('marketplace.accounts')
+                ->withErrors('Platform tidak ditemukan');
+        }
 
         if (!$code) {
-            return redirect()->route('marketplace.accounts')->withErrors('Koneksi ditolak atau gagal.');
+            return redirect()->route('marketplace.accounts')
+                ->withErrors('Code tidak ditemukan');
         }
 
         try {
             $company = Auth::user()->company;
 
-            // Exchange code for tokens (implementation depends on platform)
-            $tokens = $this->exchangeCodeForTokens($platform, $code, $shop_id);
+            $tokens = $this->exchangeCodeForTokens($platform, $code);
 
             MarketplaceAccount::updateOrCreate(
                 [
                     'platform' => $platform,
-                    'shop_id' => $shop_id,
+                    'shop_id' => $request->query('shop_id'),
                     'company_id' => $company->id,
                 ],
                 [
-                    'shop_name' => $tokens['shop_name'] ?? null,
+                    'shop_name' => $tokens['shop_name'],
                     'access_token' => $tokens['access_token'],
-                    'refresh_token' => $tokens['refresh_token'] ?? null,
-                    'expired_at' => $tokens['expired_at'] ?? null,
+                    'refresh_token' => $tokens['refresh_token'],
+                    'expired_at' => $tokens['expired_at'],
                 ]
             );
 
             return redirect()->route('marketplace.accounts')
-                ->with('success', ucfirst($platform) . ' berhasil terhubung!');
+                ->with('success', ucfirst($platform) . ' connected');
 
         } catch (\Exception $e) {
             return redirect()->route('marketplace.accounts')
-                ->withErrors('Gagal menghubungkan ' . $platform . ': ' . $e->getMessage());
+                ->withErrors($e->getMessage());
         }
     }
 
@@ -117,13 +123,12 @@ class MarketplaceConnectionController extends Controller
         $client_id = config('services.tokopedia.client_id');
         $redirect_uri = route('marketplace.callback');
 
-        return "https://auth.tiktok-shops.com/oauth/authorize?" .
-            http_build_query([
-                'client_id' => $client_id,
-                'response_type' => 'code',
-                'redirect_uri' => $redirect_uri,
-                'state' => csrf_token(),
-            ]);
+        return "https://accounts.tokopedia.com/authorize?" . http_build_query([
+            'client_id' => $client_id,
+            'redirect_uri' => $redirect_uri,
+            'response_type' => 'code',
+            'state' => csrf_token(),
+        ]);
     }
 
     protected function getTiktokAuthUrl()
@@ -131,14 +136,13 @@ class MarketplaceConnectionController extends Controller
         $client_id = config('services.tiktok.client_id');
         $redirect_uri = route('marketplace.callback');
 
-        return "https://auth.tiktok-shops.com/oauth/authorize?" .
-            http_build_query([
-                'client_id' => $client_id,
-                'response_type' => 'code',
-                'redirect_uri' => $redirect_uri,
-                'scope' => 'shop.basic_info,order.read',
-                'state' => csrf_token(),
-            ]);
+        return "https://auth.tiktok-shops.com/oauth/authorize?" . http_build_query([
+            'client_id' => $client_id,
+            'response_type' => 'code',
+            'redirect_uri' => $redirect_uri,
+            'scope' => 'shop.basic_info,order.read',
+            'state' => csrf_token(),
+        ]);
     }
 
     protected function getLazadaAuthUrl()

@@ -82,8 +82,6 @@ class TiktokService implements MarketplaceInterface
 
         dd([
             'status' => $response->status(),
-            'app_key' => $this->appId,
-            'app_secret' => $this->appSecret,
             'json' => $response->json(),
             'body' => $response->body(),
         ]);

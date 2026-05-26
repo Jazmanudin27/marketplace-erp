@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\MarketplaceConnectionController;
+use App\Http\Controllers\MarketplaceSyncController;
 use App\Http\Controllers\WebhookController;
 use App\Models\MarketplaceAccount;
 use App\Services\Marketplace\MarketplaceManager;
@@ -34,7 +35,6 @@ Route::middleware(['auth', \App\Http\Middleware\CompanyMiddleware::class])->grou
     Route::prefix('marketplace')->name('marketplace.')->group(function () {
         Route::get('/accounts', [MarketplaceConnectionController::class, 'index'])->name('accounts');
         Route::get('/accounts/{account}', [MarketplaceConnectionController::class, 'show'])->name('show');
-        Route::get('/{account}/sync-products', [MarketplaceConnectionController::class, 'syncProducts'])->name('sync-products');
         Route::post('/connect', [MarketplaceConnectionController::class, 'connect'])->name('connect');
         Route::get('/callback', [MarketplaceConnectionController::class, 'callback'])->name('callback');
         Route::delete('/accounts/{account}', [MarketplaceConnectionController::class, 'disconnect'])->name('disconnect');
@@ -43,6 +43,8 @@ Route::middleware(['auth', \App\Http\Middleware\CompanyMiddleware::class])->grou
 
 Route::get('/callback/tiktok', [MarketplaceConnectionController::class, 'callback'])
     ->name('callback.tiktok');
+
+Route::get('/marketplace/{id}/sync-products', [MarketplaceSyncController::class, 'syncProducts'])->name('marketplace.sync-products');
 
 // Test routes (remove in production)
 Route::get('/test-shopee', function () {

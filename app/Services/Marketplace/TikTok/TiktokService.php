@@ -80,11 +80,11 @@ class TiktokService implements MarketplaceInterface
                 []
             );
 
-        $json = $response->json();
-
-        Log::info('TikTok Products', $json);
-
-        return $json;
+        dd([
+            'status' => $response->status(),
+            'json' => $response->json(),
+            'body' => $response->body(),
+        ]);
     }
 
     public function getOrders($account)

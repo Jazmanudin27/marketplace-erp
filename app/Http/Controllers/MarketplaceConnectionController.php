@@ -56,35 +56,30 @@ class MarketplaceConnectionController extends Controller
 
     public function callback(Request $request)
     {
-        $code = $request->code;
+        try {
 
-        // Tukar code jadi access token
-        $tokenResponse = Http::post(
-            'https://auth.tiktok-shops.com/api/v2/token/get',
-            [
-                'app_key' => env('TIKTOK_APP_KEY'),
-                'app_secret' => env('TIKTOK_APP_SECRET'),
-                'auth_code' => $code,
-                'grant_type' => 'authorized_code',
-            ]
-        );
+            $code = $request->code;
 
-        $tokenData = $tokenResponse->json()['data'];
-
-        $accessToken = $tokenData['access_token'];
-
-        // AMBIL DATA SHOP
-        $shopResponse = Http::withHeaders([
-            'x-tts-access-token' => $accessToken,
-            'content-type' => 'application/json',
-        ])->get(
-                'https://open-api.tiktokglobalshop.com/authorization/202309/shops',
+            $tokenResponse = Http::post(
+                'https://auth.tiktok-shops.com/api/v2/token/get',
                 [
                     'app_key' => env('TIKTOK_APP_KEY'),
+                    'app_secret' => env('TIKTOK_APP_SECRET'),
+                    'auth_code' => $code,
+                    'grant_type' => 'authorized_code',
                 ]
             );
 
-        dd($shopResponse->json()); // debug dulu
+            dd($tokenResponse->json());
+
+        } catch (\Exception $e) {
+
+            dd([
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
+        }
     }
 
     public function disconnect(MarketplaceAccount $account)

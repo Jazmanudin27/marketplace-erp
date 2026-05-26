@@ -72,19 +72,40 @@ class TiktokService implements MarketplaceInterface
     {
         $this->ensureValidToken($account);
 
-        $response = Http::withHeaders([
-            'x-tts-access-token' => $account->access_token,
-            'content-type' => 'application/json',
-        ])->post(
-                'https://open-api.tiktokglobalshop.com/product/202309/products/search',
-                []
-            );
+        $path = "/api/v2/product/products/list";
 
-        dd([
-            'status' => $response->status(),
-            'json' => $response->json(),
-            'body' => $response->body(),
-        ]);
+        $products = [];
+        $page = 1;
+        $pageSize = 100;
+
+        do {
+            $response = Http::retry(3, 1000)
+                ->timeout(30)
+                ->get($this->host . $path, [
+                    'app_key' => $this->appId,
+                    'access_token' => $account->access_token,
+                    'page_size' => $pageSize,
+                    'page' => $page,
+                ]);
+
+            $data = $this->validateResponse($response);
+
+            $responseData = $data['data'] ?? [];
+            $productList = $responseData['products'] ?? [];
+
+            $products = array_merge($products, $productList);
+
+            $hasMore = $responseData['has_more'] ?? false;
+            $page++;
+
+            Log::info('TikTok Products Synced', [
+                'shop_id' => $account->shop_id,
+                'total_products' => count($productList),
+                'page' => $page,
+            ]);
+        } while ($hasMore);
+
+        return $products;
     }
 
     public function getOrders($account)

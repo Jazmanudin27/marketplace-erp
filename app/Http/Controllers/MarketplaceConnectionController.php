@@ -115,19 +115,14 @@ class MarketplaceConnectionController extends Controller
             );
 
             return redirect()
-                ->route('marketplace.connections')
+                ->route('marketplace.connect')
                 ->with('success', 'TikTok Shop berhasil terhubung');
 
         } catch (\Exception $e) {
 
-            dd([
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
-            ]);
-            // return redirect()
-            //     ->route('marketplace.connections')
-            //     ->with('error', $e->getMessage());
+            return redirect()
+                ->route('marketplace.connect')
+                ->with('error', $e->getMessage());
         }
     }
 

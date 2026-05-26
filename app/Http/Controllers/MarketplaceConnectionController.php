@@ -70,7 +70,10 @@ class MarketplaceConnectionController extends Controller
                 ]
             );
 
-            dd($tokenResponse->json());
+            dd([
+                'status' => $tokenResponse->status(),
+                'body' => $tokenResponse->body(),
+            ]);
 
         } catch (\Exception $e) {
 

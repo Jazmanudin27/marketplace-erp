@@ -11,12 +11,8 @@ class MarketplaceSyncController extends Controller
     {
         $account = MarketplaceAccount::findOrFail($id);
 
-        $service = MarketplaceManager::driver(
-            $account->platform
-        );
 
-        $products = $service->getProducts($account);
 
-        dd($products);
+        dd($account);
     }
 }

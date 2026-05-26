@@ -71,10 +71,11 @@ class TikTokService implements MarketplaceInterface
     {
         $this->ensureValidToken($account);
 
-        $path = "/api/v2/product/products/list";
+        // ✅ TikTok Shop endpoint yang benar
+        $path = "/product/202309/products/search";
 
         $products = [];
-        $page = 1;
+        $cursor = 0;
         $pageSize = 100;
 
         do {
@@ -83,25 +84,30 @@ class TikTokService implements MarketplaceInterface
                 ->get($this->host . $path, [
                     'app_key' => $this->appId,
                     'access_token' => $account->access_token,
+                    'shop_cipher' => $account->shop_id, // penting di TikTok Shop
                     'page_size' => $pageSize,
-                    'page' => $page,
+                    'cursor' => $cursor,
                 ]);
 
             $data = $this->validateResponse($response);
 
             $responseData = $data['data'] ?? [];
+
+            // ⚠️ struktur TikTok biasanya "products"
             $productList = $responseData['products'] ?? [];
 
             $products = array_merge($products, $productList);
 
+            // pagination TikTok pakai next cursor
             $hasMore = $responseData['has_more'] ?? false;
-            $page++;
+            $cursor = $responseData['next_cursor'] ?? 0;
 
             Log::info('TikTok Products Synced', [
                 'shop_id' => $account->shop_id,
-                'total_products' => count($productList),
-                'page' => $page,
+                'count' => count($productList),
+                'next_cursor' => $cursor,
             ]);
+
         } while ($hasMore);
 
         return $products;

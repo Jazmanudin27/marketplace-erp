@@ -59,7 +59,7 @@ class MarketplaceConnectionController extends Controller
 
         if (!$platform) {
             return redirect()->route('marketplace.accounts')
-                ->withErrors('Platform tidak ditemukan');
+                ->withErrors('Platform tidak ditemukan di callback');
         }
 
         if (!$code) {
@@ -87,7 +87,7 @@ class MarketplaceConnectionController extends Controller
             );
 
             return redirect()->route('marketplace.accounts')
-                ->with('success', ucfirst($platform) . ' connected');
+                ->with('success', ucfirst($platform) . ' berhasil terhubung');
 
         } catch (\Exception $e) {
             return redirect()->route('marketplace.accounts')

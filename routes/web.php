@@ -43,6 +43,8 @@ Route::middleware(['auth', \App\Http\Middleware\CompanyMiddleware::class])->grou
 Route::get('/callback/tiktok', [MarketplaceConnectionController::class, 'callback'])
     ->name('callback.tiktok');
 
+Route::get('/marketplace/{id}/sync-products', [MarketplaceAccount::class, 'syncProducts'])->name('marketplace.sync-products');
+
 // Test routes (remove in production)
 Route::get('/test-shopee', function () {
     $account = MarketplaceAccount::first();

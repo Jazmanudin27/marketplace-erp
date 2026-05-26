@@ -13,11 +13,14 @@ class TiktokService implements MarketplaceInterface
     protected string $appId;
     protected string $appSecret;
 
+
     public function __construct()
     {
-        $this->host = rtrim(config('services.tiktok.host', 'https://open.tiktokapis.com'), '/');
-        $this->appId = config('services.tiktok.app_id');
-        $this->appSecret = config('services.tiktok.app_secret');
+        $this->host = 'https://open-api.tiktokglobalshop.com';
+
+        $this->appId = env('TIKTOK_APP_KEY');
+
+        $this->appSecret = env('TIKTOK_APP_SECRET');
     }
 
     protected function ensureValidToken($account): void
@@ -69,40 +72,19 @@ class TiktokService implements MarketplaceInterface
     {
         $this->ensureValidToken($account);
 
-        $path = "/api/v2/product/products/list";
+        $response = Http::withHeaders([
+            'x-tts-access-token' => $account->access_token,
+            'content-type' => 'application/json',
+        ])->post(
+                'https://open-api.tiktokglobalshop.com/product/202309/products/search',
+                []
+            );
 
-        $products = [];
-        $page = 1;
-        $pageSize = 100;
+        $json = $response->json();
 
-        do {
-            $response = Http::retry(3, 1000)
-                ->timeout(30)
-                ->get($this->host . $path, [
-                    'app_key' => $this->appId,
-                    'access_token' => $account->access_token,
-                    'page_size' => $pageSize,
-                    'page' => $page,
-                ]);
+        Log::info('TikTok Products', $json);
 
-            $data = $this->validateResponse($response);
-
-            $responseData = $data['data'] ?? [];
-            $productList = $responseData['products'] ?? [];
-
-            $products = array_merge($products, $productList);
-
-            $hasMore = $responseData['has_more'] ?? false;
-            $page++;
-
-            Log::info('TikTok Products Synced', [
-                'shop_id' => $account->shop_id,
-                'total_products' => count($productList),
-                'page' => $page,
-            ]);
-        } while ($hasMore);
-
-        return $products;
+        return $json;
     }
 
     public function getOrders($account)
@@ -193,32 +175,33 @@ class TiktokService implements MarketplaceInterface
 
     public function refreshToken($account)
     {
-        $path = "/api/v2/oauth/refresh_token";
-
-        $response = Http::retry(3, 1000)
-            ->timeout(30)
-            ->post($this->host . $path, [
+        $response = Http::get(
+            'https://auth.tiktok-shops.com/api/v2/token/refresh',
+            [
                 'app_key' => $this->appId,
                 'app_secret' => $this->appSecret,
                 'refresh_token' => $account->refresh_token,
-            ]);
+                'grant_type' => 'refresh_token',
+            ]
+        );
 
-        $data = $this->validateResponse($response);
+        $json = $response->json();
 
-        $tokenData = $data['data'] ?? [];
-
-        if (isset($tokenData['access_token'])) {
-            $account->update([
-                'access_token' => $tokenData['access_token'],
-                'refresh_token' => $tokenData['refresh_token'],
-                'expired_at' => now()->addSeconds($tokenData['expires_in']),
-            ]);
-
-            Log::info('TikTok Token Refreshed', [
-                'shop_id' => $account->shop_id
-            ]);
+        if (($json['code'] ?? -1) != 0) {
+            throw new Exception($json['message'] ?? 'Refresh token gagal');
         }
 
-        return $tokenData;
+        $data = $json['data'];
+
+        $account->update([
+            'access_token' => $data['access_token'],
+            'refresh_token' => $data['refresh_token'],
+            'expired_at' => date(
+                'Y-m-d H:i:s',
+                $data['access_token_expire_in']
+            ),
+        ]);
+
+        return $data;
     }
 }

@@ -34,7 +34,8 @@ class MarketplaceConnectionController extends Controller
         ]);
 
         $platform = $validated['platform'];
-        session(['oauth_platform' => $platform]);
+        $platform = $request->query('platform')
+            ?? session('oauth_platform');
 
         // Redirect to OAuth URL based on platform
         switch ($platform) {

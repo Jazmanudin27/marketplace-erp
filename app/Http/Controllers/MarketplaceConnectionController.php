@@ -120,9 +120,14 @@ class MarketplaceConnectionController extends Controller
 
         } catch (\Exception $e) {
 
-            return redirect()
-                ->route('marketplace.connections')
-                ->with('error', $e->getMessage());
+            dd([
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
+            // return redirect()
+            //     ->route('marketplace.connections')
+            //     ->with('error', $e->getMessage());
         }
     }
 

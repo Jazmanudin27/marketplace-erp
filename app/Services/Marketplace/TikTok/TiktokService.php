@@ -14,7 +14,7 @@ class TikTokService implements MarketplaceInterface
     protected string $appSecret;
 
 
-    public function __construct()
+     public function __construct()
     {
         $this->host = 'https://open-api.tiktokglobalshop.com';
 

@@ -34,6 +34,7 @@ class MarketplaceConnectionController extends Controller
         ]);
 
         $platform = $validated['platform'];
+        session(['oauth_platform' => $platform]);
 
         // Redirect to OAuth URL based on platform
         switch ($platform) {
@@ -116,7 +117,7 @@ class MarketplaceConnectionController extends Controller
         $client_id = config('services.tokopedia.client_id');
         $redirect_uri = route('marketplace.callback');
 
-        return "https://accounts.tokopedia.com/authorize?" .
+        return "https://auth.tiktok-shops.com/oauth/authorize?" .
             http_build_query([
                 'client_id' => $client_id,
                 'response_type' => 'code',

@@ -68,50 +68,41 @@ class TikTokService implements MarketplaceInterface
     }
 
     public function getProducts($account)
-    {
-        $this->ensureValidToken($account);
+{
+    $this->ensureValidToken($account);
 
-        // ✅ TikTok Shop endpoint yang benar
-        $path = "/product/202309/products/search";
+    $path = "/product/202309/products/search";
 
-        $products = [];
-        $cursor = 0;
-        $pageSize = 100;
+    $products = [];
+    $cursor = 0;
+    $pageSize = 100;
 
-        do {
-            $response = Http::retry(3, 1000)
-                ->timeout(30)
-                ->get($this->host . $path, [
-                    'app_key' => $this->appId,
-                    'access_token' => $account->access_token,
-                    'shop_cipher' => $account->shop_id, // penting di TikTok Shop
-                    'page_size' => $pageSize,
-                    'cursor' => $cursor,
-                ]);
-
-            $data = $this->validateResponse($response);
-
-            $responseData = $data['data'] ?? [];
-
-            // ⚠️ struktur TikTok biasanya "products"
-            $productList = $responseData['products'] ?? [];
-
-            $products = array_merge($products, $productList);
-
-            // pagination TikTok pakai next cursor
-            $hasMore = $responseData['has_more'] ?? false;
-            $cursor = $responseData['next_cursor'] ?? 0;
-
-            Log::info('TikTok Products Synced', [
-                'shop_id' => $account->shop_id,
-                'count' => count($productList),
-                'next_cursor' => $cursor,
+    do {
+        $response = Http::retry(3, 1000)
+            ->timeout(30)
+            ->post($this->host . $path, [
+                'app_key' => $this->appId,
+                'access_token' => $account->access_token,
+                'shop_cipher' => $account->shop_id,
+                'page_size' => $pageSize,
+                'cursor' => $cursor,
             ]);
 
-        } while ($hasMore);
+        $data = $this->validateResponse($response);
 
-        return $products;
-    }
+        $responseData = $data['data'] ?? [];
+
+        $productList = $responseData['products'] ?? [];
+
+        $products = array_merge($products, $productList);
+
+        $hasMore = $responseData['has_more'] ?? false;
+        $cursor = $responseData['next_cursor'] ?? 0;
+
+    } while ($hasMore);
+
+    return $products;
+}
 
     public function getOrders($account)
     {

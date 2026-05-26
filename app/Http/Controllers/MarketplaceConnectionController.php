@@ -57,12 +57,11 @@ class MarketplaceConnectionController extends Controller
     {
         $code = $request->query('code');
 
-        $platform = $request->query('platform')
-            ?? session('oauth_platform');
+        $platform = session('oauth_platform'); // ONLY FROM SESSION
 
         if (!$platform) {
             return redirect()->route('marketplace.accounts')
-                ->withErrors('Platform tidak ditemukan di callback');
+                ->withErrors('Platform tidak ditemukan (session hilang)');
         }
 
         if (!$code) {
@@ -70,32 +69,24 @@ class MarketplaceConnectionController extends Controller
                 ->withErrors('Code tidak ditemukan');
         }
 
-        try {
-            $company = Auth::user()->company;
+        $company = Auth::user()->company;
 
-            $tokens = $this->exchangeCodeForTokens($platform, $code);
+        $tokens = $this->exchangeCodeForTokens($platform, $code);
 
-            MarketplaceAccount::updateOrCreate(
-                [
-                    'platform' => $platform,
-                    'shop_id' => $request->query('shop_id'),
-                    'company_id' => $company->id,
-                ],
-                [
-                    'shop_name' => $tokens['shop_name'],
-                    'access_token' => $tokens['access_token'],
-                    'refresh_token' => $tokens['refresh_token'],
-                    'expired_at' => $tokens['expired_at'],
-                ]
-            );
+        MarketplaceAccount::updateOrCreate(
+            [
+                'platform' => $platform,
+                'company_id' => $company->id,
+            ],
+            [
+                'access_token' => $tokens['access_token'],
+                'refresh_token' => $tokens['refresh_token'],
+                'expired_at' => $tokens['expired_at'],
+            ]
+        );
 
-            return redirect()->route('marketplace.accounts')
-                ->with('success', ucfirst($platform) . ' berhasil terhubung');
-
-        } catch (\Exception $e) {
-            return redirect()->route('marketplace.accounts')
-                ->withErrors($e->getMessage());
-        }
+        return redirect()->route('marketplace.accounts')
+            ->with('success', 'TikTok berhasil terhubung');
     }
 
     public function disconnect(MarketplaceAccount $account)

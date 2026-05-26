@@ -15,6 +15,6 @@ class MarketplaceSyncController extends Controller
 
         $result = $service->getProducts($account);
 
-        return response()->json($result);
+        return response()->json($service);
     }
 }

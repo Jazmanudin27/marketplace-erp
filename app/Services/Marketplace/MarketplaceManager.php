@@ -3,7 +3,7 @@
 namespace App\Services\Marketplace;
 
 use App\Services\Marketplace\Shopee\ShopeeService;
-use App\Services\Marketplace\TikTok\TiktokService;
+use App\Services\Marketplace\TikTok\TikTokService;
 use App\Services\Marketplace\Tokopedia\TokopediaService;
 
 class MarketplaceManager
@@ -16,7 +16,7 @@ class MarketplaceManager
 
             'tokopedia' => app(TokopediaService::class),
 
-            'tiktok' => app(TiktokService::class),
+            'tiktok' => app(TikTokService::class),
 
             default => throw new \Exception(
                 'Marketplace tidak ditemukan'

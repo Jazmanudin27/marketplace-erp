@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Services\Marketplace\Contracts\MarketplaceInterface;
 
-class TiktokService implements MarketplaceInterface
+class TikTokService implements MarketplaceInterface
 {
     protected string $host;
     protected string $appId;

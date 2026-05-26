@@ -6,6 +6,7 @@ use App\Models\MarketplaceAccount;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 
 class MarketplaceConnectionController extends Controller
 {
@@ -55,38 +56,35 @@ class MarketplaceConnectionController extends Controller
 
     public function callback(Request $request)
     {
-        $code = $request->query('code');
+        $code = $request->code;
 
-        $platform = session('oauth_platform'); // ONLY FROM SESSION
-
-        if (!$platform) {
-            return redirect()->route('marketplace.accounts')
-                ->withErrors('Platform tidak ditemukan (session hilang)');
-        }
-
-        if (!$code) {
-            return redirect()->route('marketplace.accounts')
-                ->withErrors('Code tidak ditemukan');
-        }
-
-        $company = Auth::user()->company;
-
-        $tokens = $this->exchangeCodeForTokens($platform, $code);
-
-        MarketplaceAccount::updateOrCreate(
+        // Tukar code jadi access token
+        $tokenResponse = Http::post(
+            'https://auth.tiktok-shops.com/api/v2/token/get',
             [
-                'platform' => $platform,
-                'company_id' => $company->id,
-            ],
-            [
-                'access_token' => $tokens['access_token'],
-                'refresh_token' => $tokens['refresh_token'],
-                'expired_at' => $tokens['expired_at'],
+                'app_key' => env('TIKTOK_APP_KEY'),
+                'app_secret' => env('TIKTOK_APP_SECRET'),
+                'auth_code' => $code,
+                'grant_type' => 'authorized_code',
             ]
         );
 
-        return redirect()->route('marketplace.accounts')
-            ->with('success', 'TikTok berhasil terhubung');
+        $tokenData = $tokenResponse->json()['data'];
+
+        $accessToken = $tokenData['access_token'];
+
+        // AMBIL DATA SHOP
+        $shopResponse = Http::withHeaders([
+            'x-tts-access-token' => $accessToken,
+            'content-type' => 'application/json',
+        ])->get(
+                'https://open-api.tiktokglobalshop.com/authorization/202309/shops',
+                [
+                    'app_key' => env('TIKTOK_APP_KEY'),
+                ]
+            );
+
+        dd($shopResponse->json()); // debug dulu
     }
 
     public function disconnect(MarketplaceAccount $account)

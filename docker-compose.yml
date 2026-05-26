@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # PHP-FPM Application
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: marketplace-erp-app
+    environment:
+      - APP_NAME="Marketplace ERP"
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_URL=http://localhost
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=marketplace_erp
+      - DB_USERNAME=marketplace
+      - DB_PASSWORD=marketplace123
+      - CACHE_DRIVER=redis
+      - QUEUE_CONNECTION=redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./:/app
+      - /app/storage
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - marketplace
+    ports:
+      - "9000:9000"
+
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: marketplace-erp-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: marketplace_erp
+      MYSQL_USER: marketplace
+      MYSQL_PASSWORD: marketplace123
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - marketplace
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: marketplace-erp-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - marketplace
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 20s
+      retries: 10
+
+  # Nginx Web Server
+  nginx:
+    image: nginx:alpine
+    container_name: marketplace-erp-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./:/app
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - marketplace
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  marketplace:
+    driver: bridge

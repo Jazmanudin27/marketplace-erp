@@ -133,6 +133,70 @@ class ShopeeService implements MarketplaceInterface
 
     /*
     |--------------------------------------------------------------------------
+    | Get Products
+    |--------------------------------------------------------------------------
+    */
+
+    public function getProducts($account)
+    {
+        $this->ensureValidToken($account);
+
+        $path = "/api/v2/product/get_item_list";
+
+        $timestamp = time();
+
+        $products = [];
+
+        $cursor = null;
+
+        do {
+            $baseString =
+                $this->partnerId .
+                $path .
+                $timestamp .
+                $account->access_token .
+                $account->shop_id;
+
+            $sign = $this->sign($baseString);
+
+            $params = [
+                'partner_id' => $this->partnerId,
+                'timestamp' => $timestamp,
+                'access_token' => $account->access_token,
+                'shop_id' => $account->shop_id,
+                'sign' => $sign,
+                'page_size' => 100,
+            ];
+
+            if ($cursor) {
+                $params['cursor'] = $cursor;
+            }
+
+            $response = Http::retry(3, 1000)
+                ->timeout(30)
+                ->get($this->host . $path, $params);
+
+            $data = $this->validateResponse($response);
+
+            $responseData = $data['response'] ?? [];
+            $itemList = $responseData['item_list'] ?? [];
+
+            $products = array_merge($products, $itemList);
+
+            $cursor = $responseData['next_cursor'] ?? null;
+
+            Log::info('Shopee Products Synced', [
+                'shop_id' => $account->shop_id,
+                'total_products' => count($itemList),
+                'next_cursor' => $cursor,
+            ]);
+        } while ($cursor);
+
+        return $products;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Get Orders
     |--------------------------------------------------------------------------
     */

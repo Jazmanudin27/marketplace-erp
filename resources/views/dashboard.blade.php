@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Marketplace ERP</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-gray-100">
     <nav class="bg-white shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -74,7 +76,8 @@
         <div class="bg-white rounded-lg shadow-lg p-6">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-xl font-bold text-gray-900">Akun Marketplace Terhubung</h2>
-                <a href="{{ route('marketplace.accounts') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg">
+                <a href="{{ route('marketplace.accounts') }}"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg">
                     Kelola Akun
                 </a>
             </div>
@@ -97,7 +100,8 @@
                             @foreach ($accounts as $account)
                                 <tr class="border-b hover:bg-gray-50">
                                     <td class="px-4 py-2">
-                                        <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
+                                        <span
+                                            class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
                                             {{ ucfirst($account->platform) }}
                                         </span>
                                     </td>
@@ -114,4 +118,5 @@
         </div>
     </div>
 </body>
+
 </html>

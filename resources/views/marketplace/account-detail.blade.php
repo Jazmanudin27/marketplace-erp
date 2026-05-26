@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detail Akun - Marketplace ERP</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-gray-100">
     <nav class="bg-white shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -15,7 +17,8 @@
                 </div>
                 <div class="flex items-center space-x-4">
                     <a href="{{ route('dashboard') }}" class="text-gray-600 hover:text-gray-900">Dashboard</a>
-                    <a href="{{ route('marketplace.accounts') }}" class="text-gray-600 hover:text-gray-900">Akun Marketplace</a>
+                    <a href="{{ route('marketplace.accounts') }}" class="text-gray-600 hover:text-gray-900">Akun
+                        Marketplace</a>
                     <span class="text-gray-700">{{ auth()->user()->name }}</span>
                     <form action="{{ route('logout') }}" method="POST" class="inline">
                         @csrf
@@ -36,10 +39,12 @@
         <div class="bg-white rounded-lg shadow-lg p-8">
             <div class="flex justify-between items-start mb-8">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900">{{ $account->shop_name ?? ucfirst($account->platform) }}</h1>
+                    <h1 class="text-3xl font-bold text-gray-900">
+                        {{ $account->shop_name ?? ucfirst($account->platform) }}</h1>
                     <p class="text-gray-600 mt-2">{{ ucfirst($account->platform) }} Shop Account</p>
                 </div>
-                <span class="px-4 py-2 bg-{{ match($account->platform) { 'shopee' => 'orange', 'tokopedia' => 'green', 'tiktok' => 'black', 'lazada' => 'blue', default => 'gray' } }}-100 text-{{ match($account->platform) { 'shopee' => 'orange', 'tokopedia' => 'green', 'tiktok' => 'black', 'lazada' => 'blue', default => 'gray' } }}-800 rounded-lg font-semibold">
+                <span
+                    class="px-4 py-2 bg-{{ match ($account->platform) { 'shopee' => 'orange', 'tokopedia' => 'green', 'tiktok' => 'black', 'lazada' => 'blue', default => 'gray'} }}-100 text-{{ match ($account->platform) { 'shopee' => 'orange', 'tokopedia' => 'green', 'tiktok' => 'black', 'lazada' => 'blue', default => 'gray'} }}-800 rounded-lg font-semibold">
                     {{ ucfirst($account->platform) }}
                 </span>
             </div>
@@ -75,7 +80,8 @@
                             <p class="text-gray-900 font-semibold">
                                 @if ($account->expired_at)
                                     @if ($account->expired_at->isPast())
-                                        <span class="text-red-600">{{ $account->expired_at->format('d M Y H:i') }}</span> (Kadaluarsa)
+                                        <span class="text-red-600">{{ $account->expired_at->format('d M Y H:i') }}</span>
+                                        (Kadaluarsa)
                                     @else
                                         {{ $account->expired_at->format('d M Y H:i') }}
                                     @endif
@@ -98,11 +104,9 @@
                     <form action="{{ route('marketplace.disconnect', $account) }}" method="POST">
                         @csrf
                         @method('DELETE')
-                        <button
-                            type="submit"
+                        <button type="submit"
                             class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-lg transition duration-200"
-                            onclick="return confirm('Apakah Anda yakin ingin memutus koneksi akun ini? Anda tidak akan dapat mengakses data toko ini sampai terhubung kembali.')"
-                        >
+                            onclick="return confirm('Apakah Anda yakin ingin memutus koneksi akun ini? Anda tidak akan dapat mengakses data toko ini sampai terhubung kembali.')">
                             Putus Hubung Akun
                         </button>
                     </form>
@@ -118,4 +122,5 @@
         </div>
     </div>
 </body>
+
 </html>

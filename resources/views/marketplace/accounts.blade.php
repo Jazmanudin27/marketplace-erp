@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Akun Marketplace - Marketplace ERP</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-gray-100">
     <nav class="bg-white shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -48,28 +50,32 @@
                 <form action="{{ route('marketplace.connect') }}" method="POST" class="inline">
                     @csrf
                     <input type="hidden" name="platform" value="shopee">
-                    <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg">
+                    <button type="submit"
+                        class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg">
                         + Shopee
                     </button>
                 </form>
                 <form action="{{ route('marketplace.connect') }}" method="POST" class="inline">
                     @csrf
                     <input type="hidden" name="platform" value="tokopedia">
-                    <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg">
+                    <button type="submit"
+                        class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg">
                         + Tokopedia
                     </button>
                 </form>
                 <form action="{{ route('marketplace.connect') }}" method="POST" class="inline">
                     @csrf
                     <input type="hidden" name="platform" value="tiktok">
-                    <button type="submit" class="bg-black hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg">
+                    <button type="submit"
+                        class="bg-black hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg">
                         + TikTok
                     </button>
                 </form>
                 <form action="{{ route('marketplace.connect') }}" method="POST" class="inline">
                     @csrf
                     <input type="hidden" name="platform" value="lazada">
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg">
+                    <button type="submit"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg">
                         + Lazada
                     </button>
                 </form>
@@ -81,8 +87,10 @@
                 @foreach ($accounts as $account)
                     <div class="bg-white rounded-lg shadow-lg p-6">
                         <div class="flex justify-between items-start mb-4">
-                            <h3 class="text-lg font-bold text-gray-900">{{ $account->shop_name ?? ucfirst($account->platform) }}</h3>
-                            <span class="px-3 py-1 bg-{{ match($account->platform) { 'shopee' => 'orange', 'tokopedia' => 'green', 'tiktok' => 'black', 'lazada' => 'blue', default => 'gray' } }}-100 text-{{ match($account->platform) { 'shopee' => 'orange', 'tokopedia' => 'green', 'tiktok' => 'black', 'lazada' => 'blue', default => 'gray' } }}-800 rounded-full text-xs font-semibold">
+                            <h3 class="text-lg font-bold text-gray-900">{{ $account->shop_name ?? ucfirst($account->platform) }}
+                            </h3>
+                            <span
+                                class="px-3 py-1 bg-{{ match ($account->platform) { 'shopee' => 'orange', 'tokopedia' => 'green', 'tiktok' => 'black', 'lazada' => 'blue', default => 'gray'} }}-100 text-{{ match ($account->platform) { 'shopee' => 'orange', 'tokopedia' => 'green', 'tiktok' => 'black', 'lazada' => 'blue', default => 'gray'} }}-800 rounded-full text-xs font-semibold">
                                 {{ ucfirst($account->platform) }}
                             </span>
                         </div>
@@ -96,13 +104,16 @@
                         </div>
 
                         <div class="flex space-x-2">
-                            <a href="{{ route('marketplace.show', $account) }}" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-center">
+                            <a href="{{ route('marketplace.show', $account) }}"
+                                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-center">
                                 Lihat Detail
                             </a>
                             <form action="{{ route('marketplace.disconnect', $account) }}" method="POST" class="flex-1">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg" onclick="return confirm('Apakah Anda yakin ingin memutus koneksi?')">
+                                <button type="submit"
+                                    class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg"
+                                    onclick="return confirm('Apakah Anda yakin ingin memutus koneksi?')">
                                     Putus Hubung
                                 </button>
                             </form>
@@ -119,4 +130,5 @@
         @endif
     </div>
 </body>
+
 </html>

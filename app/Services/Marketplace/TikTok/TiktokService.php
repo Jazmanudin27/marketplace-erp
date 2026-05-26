@@ -2,68 +2,223 @@
 
 namespace App\Services\Marketplace\TikTok;
 
+use Exception;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use App\Services\Marketplace\Contracts\MarketplaceInterface;
 
 class TiktokService implements MarketplaceInterface
 {
+    protected string $host;
+    protected string $appId;
+    protected string $appSecret;
+
+    public function __construct()
+    {
+        $this->host = rtrim(config('services.tiktok.host', 'https://open.tiktokapis.com'), '/');
+        $this->appId = config('services.tiktok.app_id');
+        $this->appSecret = config('services.tiktok.app_secret');
+    }
+
+    protected function ensureValidToken($account): void
+    {
+        if (!$account->expired_at) {
+            return;
+        }
+
+        if (now()->addMinutes(5)->gte($account->expired_at)) {
+            Log::info('Refreshing TikTok token', [
+                'shop_id' => $account->shop_id
+            ]);
+
+            $this->refreshToken($account);
+            $account->refresh();
+        }
+    }
+
+    protected function sign(string $baseString): string
+    {
+        return hash_hmac('sha256', $baseString, $this->appSecret);
+    }
+
+    protected function validateResponse($response): array
+    {
+        if ($response->failed()) {
+            Log::error('TikTok HTTP Error', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            throw new Exception('TikTok API request failed');
+        }
+
+        $data = $response->json();
+
+        if (isset($data['code']) && $data['code'] !== 0) {
+            Log::error('TikTok API Business Error', [
+                'response' => $data
+            ]);
+
+            throw new Exception($data['message'] ?? 'TikTok API Error');
+        }
+
+        return $data;
+    }
+
+    public function getProducts($account)
+    {
+        $this->ensureValidToken($account);
+
+        $path = "/api/v2/product/products/list";
+
+        $products = [];
+        $page = 1;
+        $pageSize = 100;
+
+        do {
+            $response = Http::retry(3, 1000)
+                ->timeout(30)
+                ->get($this->host . $path, [
+                    'app_key' => $this->appId,
+                    'access_token' => $account->access_token,
+                    'page_size' => $pageSize,
+                    'page' => $page,
+                ]);
+
+            $data = $this->validateResponse($response);
+
+            $responseData = $data['data'] ?? [];
+            $productList = $responseData['products'] ?? [];
+
+            $products = array_merge($products, $productList);
+
+            $hasMore = $responseData['has_more'] ?? false;
+            $page++;
+
+            Log::info('TikTok Products Synced', [
+                'shop_id' => $account->shop_id,
+                'total_products' => count($productList),
+                'page' => $page,
+            ]);
+        } while ($hasMore);
+
+        return $products;
+    }
+
     public function getOrders($account)
     {
-        $timestamp = time();
+        $this->ensureValidToken($account);
 
-        $path = "/api/v2/order/get_order_list";
+        $path = "/api/v2/order/orders/list";
 
-        $baseString =
-            config('services.shopee.partner_id') .
-            $path .
-            $timestamp .
-            $account->access_token .
-            $account->shop_id;
+        $orders = [];
+        $page = 1;
+        $pageSize = 100;
 
-        $sign = hash_hmac(
-            'sha256',
-            $baseString,
-            config('services.shopee.partner_key')
-        );
+        do {
+            $response = Http::retry(3, 1000)
+                ->timeout(30)
+                ->get($this->host . $path, [
+                    'app_key' => $this->appId,
+                    'access_token' => $account->access_token,
+                    'page_size' => $pageSize,
+                    'page' => $page,
+                    'create_time_from' => strtotime('-1 day'),
+                    'create_time_to' => time(),
+                ]);
 
-        $response = Http::get(
-            config('services.shopee.host') . $path,
-            [
-                'partner_id' => config('services.shopee.partner_id'),
+            $data = $this->validateResponse($response);
 
-                'timestamp' => $timestamp,
+            $responseData = $data['data'] ?? [];
+            $orderList = $responseData['orders'] ?? [];
 
-                'access_token' => $account->access_token,
+            $orders = array_merge($orders, $orderList);
 
+            $hasMore = $responseData['has_more'] ?? false;
+            $page++;
+
+            Log::info('TikTok Orders Synced', [
                 'shop_id' => $account->shop_id,
+                'total_orders' => count($orderList),
+                'page' => $page,
+            ]);
+        } while ($hasMore);
 
-                'sign' => $sign,
-
-                'time_range_field' => 'create_time',
-
-                'time_from' => strtotime('-1 day'),
-
-                'time_to' => time(),
-
-                'page_size' => 100
-            ]
-        );
-
-        return $response->json();
+        return $orders;
     }
 
     public function getOrderDetail($account, $invoice)
     {
-        return [];
+        $this->ensureValidToken($account);
+
+        $path = "/api/v2/order/orders/detail";
+
+        $response = Http::retry(3, 1000)
+            ->timeout(30)
+            ->get($this->host . $path, [
+                'app_key' => $this->appId,
+                'access_token' => $account->access_token,
+                'order_id' => $invoice,
+            ]);
+
+        $data = $this->validateResponse($response);
+
+        return $data['data'] ?? [];
     }
 
     public function syncStock($account, $product)
     {
-        return true;
+        $this->ensureValidToken($account);
+
+        $path = "/api/v2/product/stock/update";
+
+        $response = Http::retry(3, 1000)
+            ->timeout(30)
+            ->post($this->host . $path, [
+                'app_key' => $this->appId,
+                'access_token' => $account->access_token,
+                'product_id' => $product['product_id'],
+                'stock' => $product['stock'],
+            ]);
+
+        $data = $this->validateResponse($response);
+
+        Log::info('TikTok Stock Updated', [
+            'shop_id' => $account->shop_id,
+            'product_id' => $product['product_id'],
+        ]);
+
+        return $data;
     }
 
     public function refreshToken($account)
     {
-        return true;
+        $path = "/api/v2/oauth/refresh_token";
+
+        $response = Http::retry(3, 1000)
+            ->timeout(30)
+            ->post($this->host . $path, [
+                'app_key' => $this->appId,
+                'app_secret' => $this->appSecret,
+                'refresh_token' => $account->refresh_token,
+            ]);
+
+        $data = $this->validateResponse($response);
+
+        $tokenData = $data['data'] ?? [];
+
+        if (isset($tokenData['access_token'])) {
+            $account->update([
+                'access_token' => $tokenData['access_token'],
+                'refresh_token' => $tokenData['refresh_token'],
+                'expired_at' => now()->addSeconds($tokenData['expires_in']),
+            ]);
+
+            Log::info('TikTok Token Refreshed', [
+                'shop_id' => $account->shop_id
+            ]);
+        }
+
+        return $tokenData;
     }
 }

@@ -131,7 +131,7 @@ class MarketplaceConnectionController extends Controller
         $app_key = config('services.tiktok.app_key');
         $redirect_uri = route('marketplace.callback');
 
-        return "https://auth.tiktok-shops.com/oauths/authorize?" . http_build_query([
+        return "https://auth.tiktok-shops.com/oauth/authorize?" . http_build_query([
             'app_key' => $app_key,
             'response_type' => 'code',
             'redirect_uri' => $redirect_uri,

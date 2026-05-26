@@ -60,7 +60,7 @@ class MarketplaceConnectionController extends Controller
 
             $code = $request->code;
 
-            $tokenResponse = Http::post(
+            $tokenResponse = Http::get(
                 'https://auth.tiktok-shops.com/api/v2/token/get',
                 [
                     'app_key' => env('TIKTOK_APP_KEY'),
@@ -72,9 +72,9 @@ class MarketplaceConnectionController extends Controller
 
             dd([
                 'status' => $tokenResponse->status(),
+                'json' => $tokenResponse->json(),
                 'body' => $tokenResponse->body(),
             ]);
-
         } catch (\Exception $e) {
 
             dd([

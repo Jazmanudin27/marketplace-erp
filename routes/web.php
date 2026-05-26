@@ -40,8 +40,6 @@ Route::middleware(['auth', \App\Http\Middleware\CompanyMiddleware::class])->grou
     });
 });
 
-Route::get('/callback/tiktok', [MarketplaceConnectionController::class, 'callback'])
-    ->name('callback.tiktok');
 
 // Test routes (remove in production)
 Route::get('/test-shopee', function () {

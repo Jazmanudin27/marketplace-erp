@@ -18,9 +18,8 @@ class TiktokService implements MarketplaceInterface
     {
         $this->host = 'https://open-api.tiktokglobalshop.com';
 
-        $this->appId = env('TIKTOK_APP_KEY');
-
-        $this->appSecret = env('TIKTOK_APP_SECRET');
+        $this->appId = config('services.tiktok.app_key');
+        $this->appSecret = config('services.tiktok.app_secret');
     }
 
     protected function ensureValidToken($account): void
@@ -217,10 +216,7 @@ class TiktokService implements MarketplaceInterface
         $account->update([
             'access_token' => $data['access_token'],
             'refresh_token' => $data['refresh_token'],
-            'expired_at' => date(
-                'Y-m-d H:i:s',
-                $data['access_token_expire_in']
-            ),
+            'expired_at' => now()->addSeconds($data['access_token_expire_in']),
         ]);
 
         return $data;

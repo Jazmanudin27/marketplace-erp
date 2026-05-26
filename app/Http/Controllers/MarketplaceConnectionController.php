@@ -62,7 +62,7 @@ class MarketplaceConnectionController extends Controller
 
             if (!$code) {
                 return redirect()
-                    ->route('marketplace.connections')
+                    ->route('marketplace.accounts')
                     ->with('error', 'Authorization code tidak ditemukan');
             }
 
@@ -78,11 +78,10 @@ class MarketplaceConnectionController extends Controller
 
             $response = $tokenResponse->json();
 
-            // cek gagal
             if (($response['code'] ?? -1) != 0) {
 
                 return redirect()
-                    ->route('marketplace.connections')
+                    ->route('marketplace.accounts')
                     ->with('error', $response['message'] ?? 'Gagal koneksi TikTok');
             }
 
@@ -91,26 +90,21 @@ class MarketplaceConnectionController extends Controller
             MarketplaceAccount::updateOrCreate(
                 [
                     'platform' => 'tiktok',
-                    'open_id' => $data['open_id'],
+                    'shop_id' => $data['open_id'],
                 ],
                 [
                     'shop_name' => $data['seller_name'] ?? null,
-                    'shop_region' => $data['seller_base_region'] ?? null,
 
                     'access_token' => $data['access_token'],
+
                     'refresh_token' => $data['refresh_token'],
 
-                    'token_expires_at' => date(
+                    'expired_at' => date(
                         'Y-m-d H:i:s',
                         $data['access_token_expire_in']
                     ),
 
-                    'refresh_token_expires_at' => date(
-                        'Y-m-d H:i:s',
-                        $data['refresh_token_expire_in']
-                    ),
-
-                    'status' => 'connected',
+                    'company_id' => Auth::user()->company_id ?? 1,
                 ]
             );
 
@@ -120,9 +114,11 @@ class MarketplaceConnectionController extends Controller
 
         } catch (\Exception $e) {
 
-            return redirect()
-                ->route('marketplace.accounts')
-                ->with('error', $e->getMessage());
+            dd([
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
         }
     }
 

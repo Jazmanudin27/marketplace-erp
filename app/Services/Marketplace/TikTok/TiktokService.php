@@ -14,9 +14,12 @@ class TikTokService implements MarketplaceInterface
     protected string $appSecret;
 
 
-     public function __construct()
+    public function __construct()
     {
-        $this->host = 'https://open-api.tiktokglobalshop.com';
+        $this->host = rtrim(
+            config('services.tiktok.host', 'https://open-api.tiktokglobalshop.com'),
+            '/'
+        );
 
         $this->appId = config('services.tiktok.app_key');
         $this->appSecret = config('services.tiktok.app_secret');
@@ -38,9 +41,56 @@ class TikTokService implements MarketplaceInterface
         }
     }
 
-    protected function sign(string $baseString): string
+    public function sign(string $path, array $params): string
     {
-        return hash_hmac('sha256', $baseString, $this->appSecret);
+        unset($params['sign']);
+
+        ksort($params);
+
+        $string = $this->appSecret . $path;
+
+        foreach ($params as $k => $v) {
+            // IMPORTANT: array/object must be string
+            if (is_array($v) || is_object($v)) {
+                $v = json_encode($v);
+            }
+            $string .= $k . $v;
+        }
+
+        $string .= $this->appSecret;
+
+        return hash('sha256', $string);
+    }
+
+    /**
+     * =========================
+     * GET PRODUCTS (SEARCH)
+     * =========================
+     */
+    public function getProducts($account)
+    {
+        $this->ensureValidToken($account);
+
+        $path = '/product/202309/products/search';
+
+        $shopCipher = $account->shop_cipher ?: $account->shop_id;
+
+        if (!$shopCipher) {
+            throw new \Exception('shop_cipher kosong');
+        }
+
+        $params = [
+            'app_key' => $this->appId,
+            'timestamp' => (string) time(),
+            'shop_cipher' => $shopCipher,
+            'access_token' => $account->access_token,
+            'page_size' => 100,
+            'cursor' => 0,
+        ];
+
+        $params['sign'] = $this->sign($path, $params);
+
+        return Http::post($this->host . $path, $params)->json();
     }
 
     protected function validateResponse($response): array
@@ -66,43 +116,6 @@ class TikTokService implements MarketplaceInterface
 
         return $data;
     }
-
-    public function getProducts($account)
-{
-    $this->ensureValidToken($account);
-
-    $path = "/product/202309/products/search";
-
-    $products = [];
-    $cursor = 0;
-    $pageSize = 100;
-
-    do {
-        $response = Http::retry(3, 1000)
-            ->timeout(30)
-            ->post($this->host . $path, [
-                'app_key' => $this->appId,
-                'access_token' => $account->access_token,
-                'shop_cipher' => $account->shop_id,
-                'page_size' => $pageSize,
-                'cursor' => $cursor,
-            ]);
-
-        $data = $this->validateResponse($response);
-
-        $responseData = $data['data'] ?? [];
-
-        $productList = $responseData['products'] ?? [];
-
-        $products = array_merge($products, $productList);
-
-        $hasMore = $responseData['has_more'] ?? false;
-        $cursor = $responseData['next_cursor'] ?? 0;
-
-    } while ($hasMore);
-
-    return $products;
-}
 
     public function getOrders($account)
     {

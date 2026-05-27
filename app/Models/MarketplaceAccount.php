@@ -13,6 +13,7 @@ class MarketplaceAccount extends Model
     protected $fillable = [
         'platform',
         'shop_id',
+        'shop_cipher',
         'shop_name',
         'access_token',
         'refresh_token',

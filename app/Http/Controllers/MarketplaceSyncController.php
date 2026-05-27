@@ -9,12 +9,22 @@ class MarketplaceSyncController extends Controller
 {
     public function syncProducts($id)
     {
-        $account = MarketplaceAccount::findOrFail($id);
 
-        $service = MarketplaceManager::driver($account->platform);
+        try {
+            $account = MarketplaceAccount::findOrFail($id);
 
-        $result = $service->getProducts($account);
+            $service = MarketplaceManager::driver($account->platform);
 
-        return response()->json($service);
+            $result = $service->getProducts($account);
+
+            return response()->json($result);
+
+        } catch (\Throwable $e) {
+            dd([
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+        }
     }
 }

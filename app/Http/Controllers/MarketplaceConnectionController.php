@@ -43,10 +43,7 @@ class MarketplaceConnectionController extends Controller
             case 'shopee':
                 return redirect($this->getShopeeAuthUrl());
 
-            case 'tokopedia':
-                return redirect($this->getTokopediaAuthUrl());
-
-            case 'tiktok':
+                case 'tiktok':
                 return redirect($this->getTiktokAuthUrl());
 
             case 'lazada':
@@ -69,8 +66,8 @@ class MarketplaceConnectionController extends Controller
             $tokenResponse = Http::get(
                 'https://auth.tiktok-shops.com/api/v2/token/get',
                 [
-                    'app_key' => env('TIKTOK_APP_KEY'),
-                    'app_secret' => env('TIKTOK_APP_SECRET'),
+                    'app_key' => config('services.tiktok.app_key'),
+                    'app_secret' => config('services.tiktok.app_secret'),
                     'auth_code' => $code,
                     'grant_type' => 'authorized_code',
                 ]
@@ -87,22 +84,31 @@ class MarketplaceConnectionController extends Controller
 
             $data = $response['data'];
 
+            $shopId = $data['shop_id'] ?? null;
+            $shopCipher = $data['shop_cipher'] ?? null;
+
+            if (!$shopId && isset($data['seller_id'])) {
+                $shopId = $data['seller_id'];
+            }
+
+            if (!$shopCipher && isset($data['seller_id']) && !ctype_digit((string) $data['seller_id'])) {
+                $shopCipher = $data['seller_id'];
+            }
+
             MarketplaceAccount::updateOrCreate(
                 [
                     'platform' => 'tiktok',
-                    'shop_id' => $data['open_id'],
+                    'shop_id' => $shopId,
                 ],
                 [
-                    'shop_name' => $data['seller_name'] ?? null,
+                    'shop_name' => $data['shop_name'] ?? $data['seller_name'] ?? null,
+                    'shop_cipher' => $shopCipher,
 
                     'access_token' => $data['access_token'],
 
                     'refresh_token' => $data['refresh_token'],
 
-                    'expired_at' => date(
-                        'Y-m-d H:i:s',
-                        $data['access_token_expire_in']
-                    ),
+                    'expired_at' => now()->addSeconds($data['access_token_expire_in']),
 
                     'company_id' => Auth::user()->company_id ?? 1,
                 ]
@@ -146,24 +152,11 @@ class MarketplaceConnectionController extends Controller
             ]);
     }
 
-    protected function getTokopediaAuthUrl()
-    {
-        $client_id = config('services.tokopedia.client_id');
-        $redirect_uri = route('marketplace.callback');
-
-        return "https://accounts.tokopedia.com/authorize?" . http_build_query([
-            'client_id' => $client_id,
-            'redirect_uri' => $redirect_uri,
-            'response_type' => 'code',
-            'state' => csrf_token(),
-        ]);
-    }
-
     protected function getTiktokAuthUrl()
     {
         $app_key = config('services.tiktok.app_key');
-        // $redirect_uri = route('marketplace.callback');
-        $redirect_uri = url('/callback/tiktok');
+
+        $redirect_uri = config('services.tiktok.redirect_url');
 
         return "https://auth.tiktok-shops.com/oauth/authorize?" . http_build_query([
             'app_key' => $app_key,
@@ -173,6 +166,21 @@ class MarketplaceConnectionController extends Controller
             'state' => csrf_token(),
         ]);
     }
+
+    // protected function getTiktokAuthUrl()
+    // {
+    //     $app_key = config('services.tiktok.app_key');
+    //     // $redirect_uri = route('marketplace.callback');
+    //     $redirect_uri = url('/callback/tiktok');
+
+    //     return "https://auth.tiktok-shops.com/oauth/authorize?" . http_build_query([
+    //         'app_key' => $app_key,
+    //         'response_type' => 'code',
+    //         'redirect_uri' => $redirect_uri,
+    //         'scope' => 'shop.basic_info,order.read',
+    //         'state' => csrf_token(),
+    //     ]);
+    // }
 
     protected function getLazadaAuthUrl()
     {

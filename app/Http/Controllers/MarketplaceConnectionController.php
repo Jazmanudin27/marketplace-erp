@@ -62,10 +62,8 @@ class MarketplaceConnectionController extends Controller
         }
     }
 
-   public function callback(Request $request)
-{
-    try {
-
+    public function callback(Request $request)
+    {
         $code = $request->code;
 
         if (!$code) {
@@ -103,7 +101,7 @@ class MarketplaceConnectionController extends Controller
 
         $shopId = '7642983562786998032';
 
-        $save = MarketplaceAccount::updateOrCreate(
+        MarketplaceAccount::updateOrCreate(
             [
                 'platform' => 'tiktok',
                 'shop_id' => $shopId,
@@ -113,33 +111,16 @@ class MarketplaceConnectionController extends Controller
                 'platform' => 'tiktok',
                 'company_id' => $companyId,
                 'shop_id' => $shopId,
+                'shop_cipher' => $data['open_id'] ?? null,
                 'shop_name' => $data['seller_name'] ?? 'TikTok Shop',
                 'access_token' => $data['access_token'] ?? null,
                 'refresh_token' => $data['refresh_token'] ?? null,
                 'expired_at' => now()->addSeconds(
                     $data['access_token_expire_in'] ?? 86400
                 ),
-                'meta' => json_encode($data),
             ]
         );
-
-        return redirect()
-            ->route('marketplace.accounts')
-            ->with('success', 'TikTok Shop berhasil terhubung');
-
-    } catch (\Throwable $e) {
-
-        Log::error('TikTok Callback Error', [
-            'message' => $e->getMessage(),
-            'line' => $e->getLine(),
-            'file' => $e->getFile(),
-        ]);
-
-        return redirect()
-            ->route('marketplace.accounts')
-            ->with('error', $e->getMessage());
     }
-}
 
     protected function extractShopIdentifiers(array $data): array
     {

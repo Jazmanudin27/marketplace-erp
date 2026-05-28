@@ -63,22 +63,16 @@ class MarketplaceConnectionController extends Controller
     }
 public function callback(Request $request)
 {
-    // 1. ambil code
     $code = $request->code;
 
-    dd([
-        'STEP_1_CODE' => $code,
-        'REQUEST_ALL' => $request->all(),
-    ]);
+    if (!$code) {
+        dd('NO CODE');
+    }
 
     $appKey = config('services.tiktok.app_key');
     $appSecret = config('services.tiktok.app_secret');
 
-    /**
-     * ======================================
-     * 2. GET ACCESS TOKEN
-     * ======================================
-     */
+    // 1. GET TOKEN
     $tokenResponse = Http::get('https://auth.tiktok-shops.com/api/v2/token/get', [
         'app_key' => $appKey,
         'app_secret' => $appSecret,
@@ -86,60 +80,10 @@ public function callback(Request $request)
         'grant_type' => 'authorized_code',
     ]);
 
-    dd([
-        'STEP_2_TOKEN_RESPONSE_RAW' => $tokenResponse->body(),
-        'STEP_2_TOKEN_JSON' => $tokenResponse->json(),
-    ]);
-
     $tokenJson = $tokenResponse->json();
 
-    $accessToken = $tokenJson['data']['access_token'] ?? null;
-
     dd([
-        'STEP_2_ACCESS_TOKEN' => $accessToken,
-    ]);
-
-    /**
-     * ======================================
-     * 3. GET SHOPS
-     * ======================================
-     */
-    $timestamp = time();
-
-    $params = [
-        'app_key' => $appKey,
-        'timestamp' => $timestamp,
-    ];
-
-    ksort($params);
-
-    $stringToSign = '';
-    foreach ($params as $k => $v) {
-        $stringToSign .= $k . $v;
-    }
-
-    $sign = hash_hmac('sha256', $stringToSign, $appSecret);
-
-    dd([
-        'STEP_3_SIGN_DEBUG' => [
-            'params' => $params,
-            'string_to_sign' => $stringToSign,
-            'sign' => $sign,
-        ]
-    ]);
-
-    $shopResponse = Http::withHeaders([
-        'x-tts-access-token' => $accessToken,
-        'content-type' => 'application/json',
-    ])->get('https://open-api.tiktokglobalshop.com/authorization/202309/shops', [
-        'app_key' => $appKey,
-        'timestamp' => $timestamp,
-        'sign' => $sign,
-    ]);
-
-    dd([
-        'STEP_4_SHOPS_RAW' => $shopResponse->body(),
-        'STEP_4_SHOPS_JSON' => $shopResponse->json(),
+        'TOKEN_RESPONSE' => $tokenJson
     ]);
 }
 

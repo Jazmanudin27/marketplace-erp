@@ -106,6 +106,14 @@ class MarketplaceConnectionController extends Controller
                 'platform' => 'tiktok',
                 'shop_id' => $shopId,
                 'company_id' => $companyId,
+            ],
+            [
+                'platform' => 'tiktok',
+                'company_id' => $companyId,
+                'shop_id' => $shopId,
+                'shop_name' => $data['seller_name'] ?? 'TikTok Shop',
+                'access_token' => $data['access_token'] ?? null,
+                'refresh_token' => $data['refresh_token'] ?? null,
             ]
         );
 

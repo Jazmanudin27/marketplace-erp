@@ -64,32 +64,35 @@ class MarketplaceConnectionController extends Controller
 
 public function callback(Request $request)
 {
-    $code = $request->code;
+    try {
 
-    $tokenResponse = Http::get(
-        'https://auth.tiktok-shops.com/api/v2/token/get',
-        [
-            'app_key' => config('services.tiktok.app_key'),
-            'app_secret' => config('services.tiktok.app_secret'),
-            'auth_code' => $code,
-            'grant_type' => 'authorized_code',
-        ]
-    );
+        $code = $request->code;
 
-    $tokenData = $tokenResponse->json('data');
+        $tokenResponse = Http::get(
+            'https://auth.tiktok-shops.com/api/v2/token/get',
+            [
+                'app_key' => config('services.tiktok.app_key'),
+                'app_secret' => config('services.tiktok.app_secret'),
+                'auth_code' => $code,
+                'grant_type' => 'authorized_code',
+            ]
+        );
 
-    $accessToken = $tokenData['access_token'];
+        $tokenData = $tokenResponse->json('data');
 
-    $shopResponse = Http::withHeaders([
-        'x-tts-access-token' => $accessToken,
-    ])->get(
-        'https://open-api.tiktokglobalshop.com/seller/202309/shops'
-    );
+        dd([
+            'token_response' => $tokenResponse->json(),
+            'token_data' => $tokenData,
+        ]);
 
-    dd([
-        'token' => $tokenData,
-        'shop' => $shopResponse->json(),
-    ]);
+    } catch (\Throwable $e) {
+
+        dd([
+            'message' => $e->getMessage(),
+            'line' => $e->getLine(),
+            'file' => $e->getFile(),
+        ]);
+    }
 }
 
     protected function extractShopIdentifiers(array $data): array

@@ -78,20 +78,13 @@ public function callback(Request $request)
             ]
         );
 
-        $tokenData = $tokenResponse->json('data');
-
-        $accessToken = $tokenData['access_token'];
-
-        $shopResponse = Http::withHeaders([
-            'x-tts-access-token' => $accessToken,
-        ])->get(
-            'https://open-api.tiktokglobalshop.com/seller/202309/shops'
-        );
+        $json = $tokenResponse->json();
 
         dd([
-            'status' => $shopResponse->status(),
-            'body' => $shopResponse->body(),
-            'json' => $shopResponse->json(),
+            'status' => $tokenResponse->status(),
+            'json' => $json,
+            'data' => $json['data'] ?? null,
+            'access_token' => $json['data']['access_token'] ?? null,
         ]);
 
     } catch (\Throwable $e) {

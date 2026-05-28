@@ -52,7 +52,7 @@ class MarketplaceConnectionController extends Controller
             case 'shopee':
                 return redirect($this->getShopeeAuthUrl());
 
-                case 'tiktok':
+            case 'tiktok':
                 return redirect($this->getTiktokAuthUrl());
 
             case 'lazada':
@@ -63,6 +63,7 @@ class MarketplaceConnectionController extends Controller
     public function callback(Request $request)
     {
         try {
+            $user = Auth::user();
 
             $code = $request->code;
 
@@ -95,7 +96,7 @@ class MarketplaceConnectionController extends Controller
 
             [$shopId, $shopCipher] = $this->extractShopIdentifiers($data);
             $expiredAt = $this->resolveAccessTokenExpiry($data);
-            $companyId = Auth::user()->company_id
+            $companyId = $user?->company_id
                 ?? session('company_id')
                 ?? session('oauth_company_id');
 
@@ -115,8 +116,8 @@ class MarketplaceConnectionController extends Controller
                 'shop_name' => $data['shop_name'] ?? $data['seller_name'] ?? null,
                 'access_token' => $data['access_token'] ?? null,
                 'refresh_token' => $data['refresh_token'] ?? null,
-                'expired_at' => $expiredAt,
-                'company_id' => $companyId,
+                'expired_at' => $expiredAt ?? null,
+                'company_id' => $companyId ?? null,
             ];
 
             if (Schema::hasColumn('marketplace_accounts', 'shop_cipher')) {
@@ -127,7 +128,7 @@ class MarketplaceConnectionController extends Controller
                 [
                     'platform' => 'tiktok',
                     'shop_id' => $shopId ?? $shopCipher,
-                    'company_id' => $companyId,
+                    'company_id' => $companyId ?? null,
                 ],
                 $values
             );

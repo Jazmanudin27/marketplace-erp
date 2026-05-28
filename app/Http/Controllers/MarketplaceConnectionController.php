@@ -66,7 +66,7 @@ public function callback(Request $request)
 {
     $code = $request->code;
 
-    $response = Http::timeout(30)->get(
+    $tokenResponse = Http::get(
         'https://auth.tiktok-shops.com/api/v2/token/get',
         [
             'app_key' => config('services.tiktok.app_key'),
@@ -76,10 +76,19 @@ public function callback(Request $request)
         ]
     );
 
+    $tokenData = $tokenResponse->json('data');
+
+    $accessToken = $tokenData['access_token'];
+
+    $shopResponse = Http::withHeaders([
+        'x-tts-access-token' => $accessToken,
+    ])->get(
+        'https://open-api.tiktokglobalshop.com/seller/202309/shops'
+    );
+
     dd([
-        'status' => $response->status(),
-        'body' => $response->body(),
-        'json' => $response->json(),
+        'token' => $tokenData,
+        'shop' => $shopResponse->json(),
     ]);
 }
 

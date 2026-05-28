@@ -66,21 +66,25 @@ Route::get('/test-tiktok-shops', function () {
 
     $sign = hash_hmac('sha256', $baseString, $appSecret);
 
-    // 🔥 AMBIL DARI SESSION (INI KUNCINYA)
     $accessToken = session('tiktok_token');
 
     $response = Http::withHeaders([
         'x-tts-access-token' => $accessToken,
     ])->get('https://open-api.tiktokglobalshop.com/authorization/202309/shops', [
-                'app_key' => $appKey,
-                'timestamp' => $timestamp,
-                'sign' => $sign,
-            ]);
+        'app_key' => $appKey,
+        'timestamp' => $timestamp,
+        'sign' => $sign,
+    ]);
 
-    return [
-        'access_token' => $accessToken,
-        'response' => $response->json()
-    ];
+    dd([
+        'ACCESS_TOKEN' => $accessToken,
+        'TIMESTAMP' => $timestamp,
+        'SIGN' => $sign,
+        'BASE_STRING' => $baseString,
+        'STATUS' => $response->status(),
+        'RESPONSE_BODY' => $response->body(),
+        'RESPONSE_JSON' => $response->json(),
+    ]);
 });
 
 Route::get('/callback/tiktok', [MarketplaceConnectionController::class, 'callback'])

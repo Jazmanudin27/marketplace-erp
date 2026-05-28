@@ -78,18 +78,35 @@ class MarketplaceConnectionController extends Controller
 
     public function getAccessToken($code)
     {
-        $response = Http::get('https://auth.tiktok-shops.com/api/v2/token/get', [
-            'app_key' => config('services.tiktok.app_key'),
-            'app_secret' => config('services.tiktok.app_secret'),
-            'auth_code' => $code,
-            'grant_type' => 'authorized_code',
-        ]);
+        $response = Http::timeout(30)->get(
+            'https://auth.tiktok-shops.com/api/v2/token/get',
+            [
+                'app_key' => config('services.tiktok.app_key'),
+                'app_secret' => config('services.tiktok.app_secret'),
+                'auth_code' => $code,
+                'grant_type' => 'authorized_code',
+            ]
+        );
 
-        dd([
-            'STATUS' => $response->status(),
-            'BODY' => $response->body(),
-            'JSON' => $response->json(),
-        ]);
+        $json = $response->json();
+
+        // ❌ kalau gagal
+        if (!$response->successful() || !isset($json['data']['access_token'])) {
+            return [
+                'success' => false,
+                'status' => $response->status(),
+                'error' => $json ?? $response->body(),
+            ];
+        }
+
+        // ✅ kalau sukses
+        return [
+            'success' => true,
+            'access_token' => $json['data']['access_token'],
+            'refresh_token' => $json['data']['refresh_token'] ?? null,
+            'open_id' => $json['data']['open_id'] ?? null,
+            'raw' => $json,
+        ];
     }
     /*
     |--------------------------------------

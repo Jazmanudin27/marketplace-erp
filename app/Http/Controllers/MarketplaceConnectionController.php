@@ -63,106 +63,106 @@ class MarketplaceConnectionController extends Controller
     }
 
 
-   public function callback(Request $request)
-{
-    try {
+    public function callback(Request $request)
+    {
+        try {
 
-        $code = $request->code;
+            $code = $request->code;
 
-        if (!$code) {
-            dd(['step' => 'NO CODE', 'request' => $request->all()]);
-        }
+            if (!$code) {
+                dd(['step' => 'NO CODE', 'request' => $request->all()]);
+            }
 
-        /*
-        |----------------------
-        | TOKEN
-        |----------------------
-        */
-        $tokenResponse = Http::timeout(30)->get(
-            'https://auth.tiktok-shops.com/api/v2/token/get',
-            [
+            /*
+            |----------------------
+            | TOKEN
+            |----------------------
+            */
+            $tokenResponse = Http::timeout(30)->get(
+                'https://auth.tiktok-shops.com/api/v2/token/get',
+                [
+                    'app_key' => config('services.tiktok.app_key'),
+                    'app_secret' => config('services.tiktok.app_secret'),
+                    'auth_code' => $code,
+                    'grant_type' => 'authorized_code',
+                ]
+            );
+
+            $json = $tokenResponse->json();
+
+            if (($json['code'] ?? -1) != 0) {
+                dd(['TOKEN ERROR' => $json]);
+            }
+
+            $data = $json['data'] ?? [];
+
+            $accessToken = $data['access_token'] ?? null;
+
+            if (!$accessToken) {
+                dd(['ACCESS TOKEN NULL' => $data]);
+            }
+
+            /*
+            |----------------------
+            | SHOP REQUEST
+            |----------------------
+            */
+            $path = "/api/shop/get_authorized_shop";
+
+            $params = [
                 'app_key' => config('services.tiktok.app_key'),
-                'app_secret' => config('services.tiktok.app_secret'),
-                'auth_code' => $code,
-                'grant_type' => 'authorized_code',
-            ]
-        );
+                'timestamp' => time(),
+            ];
 
-        $json = $tokenResponse->json();
+            $params['sign'] = $this->makeSign($path, $params);
 
-        if (($json['code'] ?? -1) != 0) {
-            dd(['TOKEN ERROR' => $json]);
-        }
+            $shopResponse = Http::withHeaders([
+                'Access-Token' => $accessToken, // 👈 PAKAI INI (BUKAN x-tts)
+            ])->get(
+                    'https://open-api.tiktokglobalshop.com' . $path,
+                    $params
+                );
 
-        $data = $json['data'] ?? [];
 
-        $accessToken = $data['access_token'] ?? null;
+            $shopJson = $shopResponse->json();
 
-        if (!$accessToken) {
-            dd(['ACCESS TOKEN NULL' => $data]);
-        }
+            /*
+            |----------------------
+            | SAFE CHECK (INI PENTING)
+            |----------------------
+            */
+            if (!is_array($shopJson)) {
+                dd([
+                    'SHOP RESPONSE NOT ARRAY' => $shopResponse->body()
+                ]);
+            }
 
-        /*
-        |----------------------
-        | SHOP REQUEST
-        |----------------------
-        */
-        $path = "/api/shop/get_authorized_shop";
-        $timestamp = time();
+            if (($shopJson['code'] ?? -1) != 0) {
+                dd(['SHOP ERROR' => $shopJson]);
+            }
 
-        $params = [
-            'app_key' => config('services.tiktok.app_key'),
-            'timestamp' => $timestamp,
-        ];
+            $shopData = $shopJson['data']['shops'][0] ?? null;
 
-        $params['sign'] = $this->makeSign($path, $params);
+            $shopId = $shopData['shop_id'] ?? null;
+            $shopName = $shopData['shop_name'] ?? null;
 
-        $shopResponse = Http::withHeaders([
-            'x-tts-access-token' => $accessToken,
-        ])->get(
-            'https://open-api.tiktokglobalshop.com' . $path,
-            $params
-        );
-
-        $shopJson = $shopResponse->json();
-
-        /*
-        |----------------------
-        | SAFE CHECK (INI PENTING)
-        |----------------------
-        */
-        if (!is_array($shopJson)) {
             dd([
-                'SHOP RESPONSE NOT ARRAY' => $shopResponse->body()
+                'SUCCESS',
+                'shop_id' => $shopId,
+                'shop_name' => $shopName,
+                'open_id' => $data['open_id'] ?? null,
+                'raw_shop' => $shopJson,
+            ]);
+
+        } catch (\Throwable $e) {
+            dd([
+                'EXCEPTION ERROR',
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
             ]);
         }
-
-        if (($shopJson['code'] ?? -1) != 0) {
-            dd(['SHOP ERROR' => $shopJson]);
-        }
-
-        $shopData = $shopJson['data']['shops'][0] ?? null;
-
-        $shopId = $shopData['shop_id'] ?? null;
-        $shopName = $shopData['shop_name'] ?? null;
-
-        dd([
-            'SUCCESS',
-            'shop_id' => $shopId,
-            'shop_name' => $shopName,
-            'open_id' => $data['open_id'] ?? null,
-            'raw_shop' => $shopJson,
-        ]);
-
-    } catch (\Throwable $e) {
-        dd([
-            'EXCEPTION ERROR',
-            'message' => $e->getMessage(),
-            'line' => $e->getLine(),
-            'file' => $e->getFile(),
-        ]);
     }
-}
     /*
     |--------------------------------------
     | SIGNATURE GENERATOR (WAJIB)

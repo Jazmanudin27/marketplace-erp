@@ -137,28 +137,34 @@ class MarketplaceConnectionController extends Controller
 
         $companyId = session('company_id')
             ?? Auth::user()->company_id;
+        dd([
+            'company_id' => $companyId,
+            'shop' => $shop,
+            'access_token' => $accessToken,
+            'refresh_token' => $data['refresh_token'] ?? null,
+            'expired_at' => $data['access_token_expire_in'] ?? null,
+        ]);
+        // MarketplaceAccount::updateOrCreate(
+        //     [
+        //         'platform' => 'tiktok',
+        //         'shop_id' => $shop['id'],
+        //         'company_id' => $companyId,
+        //     ],
+        //     [
+        //         'platform' => 'tiktok',
+        //         'company_id' => $companyId,
+        //         'shop_id' => $shop['id'],
+        //         'shop_cipher' => $shop['cipher'] ?? null,
+        //         'shop_name' => $shop['name'] ?? ($data['seller_name'] ?? 'TikTok Shop'),
+        //         'access_token' => $accessToken,
+        //         'refresh_token' => $data['refresh_token'] ?? null,
+        //         'expired_at' => $data['access_token_expire_in']
+        //     ]
+        // );
 
-        MarketplaceAccount::updateOrCreate(
-            [
-                'platform' => 'tiktok',
-                'shop_id' => $shop['id'],
-                'company_id' => $companyId,
-            ],
-            [
-                'platform' => 'tiktok',
-                'company_id' => $companyId,
-                'shop_id' => $shop['id'],
-                'shop_cipher' => $shop['cipher'] ?? null,
-                'shop_name' => $shop['name'] ?? ($data['seller_name'] ?? 'TikTok Shop'),
-                'access_token' => $accessToken,
-                'refresh_token' => $data['refresh_token'] ?? null,
-                'expired_at' => $data['access_token_expire_in']
-            ]
-        );
-
-        return redirect()
-            ->route('marketplace.accounts')
-            ->with('success', 'TikTok Shop berhasil terhubung');
+        // return redirect()
+        //     ->route('marketplace.accounts')
+        //     ->with('success', 'TikTok Shop berhasil terhubung');
     }
     public function disconnect(MarketplaceAccount $account)
     {

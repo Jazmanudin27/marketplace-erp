@@ -69,8 +69,17 @@ class MarketplaceConnectionController extends Controller
         $code = $request->code;
 
         if (!$code) {
-            dd('Code kosong');
+
+            return redirect()
+                ->route('marketplace.accounts')
+                ->with('error', 'Authorization code tidak ditemukan');
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | GET ACCESS TOKEN
+        |--------------------------------------------------------------------------
+        */
 
         $tokenResponse = Http::timeout(30)->get(
             'https://auth.tiktok-shops.com/api/v2/token/get',
@@ -82,29 +91,102 @@ class MarketplaceConnectionController extends Controller
             ]
         );
 
-        $json = $tokenResponse->json();
+        $tokenJson = $tokenResponse->json();
 
-        if (($json['code'] ?? -1) != 0) {
-            dd($json);
+        if (($tokenJson['code'] ?? -1) != 0) {
+
+            return redirect()
+                ->route('marketplace.accounts')
+                ->with(
+                    'error',
+                    $tokenJson['message'] ?? 'Gagal mengambil access token'
+                );
         }
 
-        $data = $json['data'];
+        $data = $tokenJson['data'];
 
         $accessToken = $data['access_token'];
+        $refreshToken = $data['refresh_token'];
+
+        /*
+        |--------------------------------------------------------------------------
+        | GET SHOP INFO
+        |--------------------------------------------------------------------------
+        */
+
+        $path = '/seller/202309/shops';
+
+        $params = [
+            'app_key' => config('services.tiktok.app_key'),
+            'timestamp' => time(),
+        ];
+
+        ksort($params);
+
+        $signString = '';
+
+        foreach ($params as $key => $value) {
+            $signString .= $key . $value;
+        }
+
+        $sign = hash_hmac(
+            'sha256',
+            $path . $signString,
+            config('services.tiktok.app_secret')
+        );
+
+        $params['sign'] = $sign;
 
         $shopResponse = Http::withHeaders([
             'x-tts-access-token' => $accessToken,
         ])->get(
-            'https://open-api.tiktokglobalshop.com/seller/202309/shops'
+            'https://open-api.tiktokglobalshop.com' . $path,
+            $params
         );
 
+        $shopJson = $shopResponse->json();
+
+        /*
+        |--------------------------------------------------------------------------
+        | DEBUG RESULT
+        |--------------------------------------------------------------------------
+        */
+
         dd([
-            'seller_name' => $data['seller_name'] ?? null,
-            'access_token' => $accessToken,
+            'token_json' => $tokenJson,
             'shop_status' => $shopResponse->status(),
-            'shop_body' => $shopResponse->body(),
-            'shop_json' => $shopResponse->json(),
+            'shop_json' => $shopJson,
         ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | EXAMPLE SAVE DATABASE
+        |--------------------------------------------------------------------------
+        */
+
+        /*
+        $shop = $shopJson['data']['shops'][0] ?? null;
+
+        MarketplaceAccount::updateOrCreate(
+            [
+                'platform' => 'tiktok',
+                'shop_id' => $shop['id'] ?? null,
+            ],
+            [
+                'platform' => 'tiktok',
+                'shop_id' => $shop['id'] ?? null,
+                'shop_cipher' => $shop['cipher'] ?? null,
+                'shop_name' => $shop['name'] ?? ($data['seller_name'] ?? 'TikTok Shop'),
+
+                'access_token' => $accessToken,
+                'refresh_token' => $refreshToken,
+
+                'expired_at' => now()->addSeconds(
+                    $data['access_token_expire_in'] ?? 86400
+                ),
+            ]
+        );
+        */
 
     } catch (\Throwable $e) {
 

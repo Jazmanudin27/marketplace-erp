@@ -85,98 +85,73 @@ class MarketplaceConnectionController extends Controller
         $json = $tokenResponse->json();
 
         if (($json['code'] ?? -1) != 0) {
-
             return redirect()
                 ->route('marketplace.accounts')
-                ->with(
-                    'error',
-                    $json['message'] ?? 'Gagal mengambil access token'
-                );
+                ->with('error', $json['message'] ?? 'Gagal mengambil access token');
         }
 
         $data = $json['data'];
 
+        $accessToken = $data['access_token'];
+
+        /*
+        |---------------------------------------
+        | AMBIL SHOP ID DARI TIKTOK API
+        |---------------------------------------
+        */
+
+        $shopResponse = Http::withHeaders([
+            'x-tts-access-token' => $accessToken,
+            'content-type' => 'application/json',
+        ])->get(
+                'https://open-api.tiktokglobalshop.com/authorization/202309/shops',
+                [
+                    'app_key' => config('services.tiktok.app_key'),
+                    'timestamp' => time(),
+                    'sign' => 'REPLACE_LATER'
+                ]
+            );
+
+        $shopJson = $shopResponse->json();
+
+        $shop = $shopJson['data']['shops'][0] ?? null;
+
+        if (!$shop) {
+            return redirect()
+                ->route('marketplace.accounts')
+                ->with('error', 'Shop TikTok tidak ditemukan');
+        }
+
         $companyId = session('company_id')
             ?? Auth::user()->company_id;
-
-        $shopId = '7642983562786998032';
 
         MarketplaceAccount::updateOrCreate(
             [
                 'platform' => 'tiktok',
-                'shop_id' => $shopId,
+                'shop_id' => $shop['id'],
                 'company_id' => $companyId,
             ],
             [
                 'platform' => 'tiktok',
                 'company_id' => $companyId,
-                'shop_id' => $shopId,
-                'shop_name' => $data['seller_name'] ?? 'TikTok Shop',
-                'access_token' => $data['access_token'] ?? null,
+
+                'shop_id' => $shop['id'],
+                'shop_cipher' => $shop['cipher'] ?? null,
+
+                'shop_name' => $shop['name'] ?? ($data['seller_name'] ?? 'TikTok Shop'),
+
+                'access_token' => $accessToken,
                 'refresh_token' => $data['refresh_token'] ?? null,
-                'expired_at' => $data['access_token_expire_in'],
+
+                'expired_at' => now()->addSeconds(
+                    $data['access_token_expire_in'] ?? 86400
+                ),
             ]
         );
 
-    }
-
-    protected function extractShopIdentifiers(array $data): array
-    {
-        $shopId = $data['shop_id']
-            ?? $data['seller_id']
-            ?? data_get($data, 'shop.id')
-            ?? data_get($data, 'shop.shop_id')
-            ?? null;
-
-        $shopCipher = $data['shop_cipher']
-            ?? data_get($data, 'shop.shop_cipher')
-            ?? null;
-
-        if (!$shopId && $shopCipher) {
-            $shopId = $shopCipher;
-        }
-
-        if (!$shopCipher && is_string($shopId) && !ctype_digit($shopId)) {
-            $shopCipher = $shopId;
-        }
-
-        return [
-            $shopId ? (string) $shopId : null,
-            $shopCipher ? (string) $shopCipher : null,
-        ];
-    }
-
-    protected function resolveAccessTokenExpiry(array $data): ?\DateTimeInterface
-    {
-        $expiryValue = $data['access_token_expire_in']
-            ?? $data['access_token_expire_at']
-            ?? $data['expires_in']
-            ?? $data['expires_at']
-            ?? null;
-
-        if ($expiryValue === null || $expiryValue === '') {
-            return null;
-        }
-
-        if (is_numeric($expiryValue)) {
-            $raw = (int) $expiryValue;
-
-            if ($raw > 9999999999) {
-                $raw = (int) floor($raw / 1000);
-            }
-
-            if ($raw >= 946684800 && $raw <= 4102444800) {
-                return Carbon::createFromTimestamp($raw);
-            }
-
-            return now()->addSeconds($raw);
-        }
-
-        try {
-            return Carbon::parse($expiryValue);
-        } catch (\Throwable $e) {
-            return null;
-        }
+        return redirect()
+            ->route('marketplace.accounts')
+            ->with('success', 'TikTok Shop berhasil terhubung');
     }
 
     public function disconnect(MarketplaceAccount $account)

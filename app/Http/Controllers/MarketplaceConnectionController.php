@@ -117,26 +117,26 @@ class MarketplaceConnectionController extends Controller
         |--------------------------------------
         */
 
-        $path = "/api/shop/get_authorized_shop";
-        $timestamp = time();
+       $path = "/api/shop/get_authorized_shop";
 
-        $params = [
-            'app_key' => config('services.tiktok.app_key'),
-            'timestamp' => $timestamp,
-        ];
+$timestamp = time();
 
-        // generate sign
-        $params['sign'] = $this->makeSign($path, $params);
+$params = [
+    'app_key' => config('services.tiktok.app_key'),
+    'timestamp' => $timestamp,
+];
 
-        $shopResponse = Http::withHeaders([
-            'Access-Token' => $accessToken,
-        ])->get(
-            'https://open-api.tiktokglobalshop.com' . $path,
-            $params
-        );
+$params['sign'] = $this->makeSign($path, $params);
 
-        $shopJson = $shopResponse->json();
+$shopResponse = Http::withHeaders([
+    'x-tts-access-token' => $accessToken,
+    'Content-Type' => 'application/json',
+])->get(
+    'https://open-api-sg.tiktokglobalshop.com' . $path,
+    $params
+);
 
+$shopJson = $shopResponse->json();
         if (($shopJson['code'] ?? -1) != 0) {
             dd([
                 'step' => 'SHOP ERROR',

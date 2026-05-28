@@ -62,12 +62,24 @@ class MarketplaceConnectionController extends Controller
         }
     }
 
-    public function callback(Request $request)
+public function callback(Request $request)
 {
+    $code = $request->code;
+
+    $response = Http::timeout(30)->get(
+        'https://auth.tiktok-shops.com/api/v2/token/get',
+        [
+            'app_key' => config('services.tiktok.app_key'),
+            'app_secret' => config('services.tiktok.app_secret'),
+            'auth_code' => $code,
+            'grant_type' => 'authorized_code',
+        ]
+    );
+
     dd([
-        'all_request' => $request->all(),
-        'code' => $request->code,
-        'query' => $request->query(),
+        'status' => $response->status(),
+        'body' => $response->body(),
+        'json' => $response->json(),
     ]);
 }
 

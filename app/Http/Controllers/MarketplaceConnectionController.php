@@ -61,32 +61,85 @@ class MarketplaceConnectionController extends Controller
                 return redirect($this->getLazadaAuthUrl());
         }
     }
-
-
-    public function callback(Request $request)
+public function callback(Request $request)
 {
-    $code = $request->query('code');
-    $stateRaw = $request->query('state');
+    // 1. ambil code
+    $code = $request->code;
 
-    $state = json_decode($stateRaw, true);
+    dd([
+        'STEP_1_CODE' => $code,
+        'REQUEST_ALL' => $request->all(),
+    ]);
 
-    if (!$code) {
-        return response()->json(['error' => 'code missing']);
-    }
+    $appKey = config('services.tiktok.app_key');
+    $appSecret = config('services.tiktok.app_secret');
 
-    // STEP 1: exchange token
-    $response = Http::get('https://auth.tiktok-shops.com/api/v2/token/get', [
-        'app_key' => config('services.tiktok.app_key'),
-        'app_secret' => config('services.tiktok.app_secret'),
+    /**
+     * ======================================
+     * 2. GET ACCESS TOKEN
+     * ======================================
+     */
+    $tokenResponse = Http::get('https://auth.tiktok-shops.com/api/v2/token/get', [
+        'app_key' => $appKey,
+        'app_secret' => $appSecret,
         'auth_code' => $code,
         'grant_type' => 'authorized_code',
     ]);
 
-    $data = $response->json();
+    dd([
+        'STEP_2_TOKEN_RESPONSE_RAW' => $tokenResponse->body(),
+        'STEP_2_TOKEN_JSON' => $tokenResponse->json(),
+    ]);
+
+    $tokenJson = $tokenResponse->json();
+
+    $accessToken = $tokenJson['data']['access_token'] ?? null;
 
     dd([
-        'state' => $state,
-        'token_response' => $data
+        'STEP_2_ACCESS_TOKEN' => $accessToken,
+    ]);
+
+    /**
+     * ======================================
+     * 3. GET SHOPS
+     * ======================================
+     */
+    $timestamp = time();
+
+    $params = [
+        'app_key' => $appKey,
+        'timestamp' => $timestamp,
+    ];
+
+    ksort($params);
+
+    $stringToSign = '';
+    foreach ($params as $k => $v) {
+        $stringToSign .= $k . $v;
+    }
+
+    $sign = hash_hmac('sha256', $stringToSign, $appSecret);
+
+    dd([
+        'STEP_3_SIGN_DEBUG' => [
+            'params' => $params,
+            'string_to_sign' => $stringToSign,
+            'sign' => $sign,
+        ]
+    ]);
+
+    $shopResponse = Http::withHeaders([
+        'x-tts-access-token' => $accessToken,
+        'content-type' => 'application/json',
+    ])->get('https://open-api.tiktokglobalshop.com/authorization/202309/shops', [
+        'app_key' => $appKey,
+        'timestamp' => $timestamp,
+        'sign' => $sign,
+    ]);
+
+    dd([
+        'STEP_4_SHOPS_RAW' => $shopResponse->body(),
+        'STEP_4_SHOPS_JSON' => $shopResponse->json(),
     ]);
 }
 

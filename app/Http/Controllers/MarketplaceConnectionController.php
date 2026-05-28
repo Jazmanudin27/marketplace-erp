@@ -62,100 +62,100 @@ class MarketplaceConnectionController extends Controller
         }
     }
 
-  public function callback(Request $request)
-{
-    $code = $request->code;
+    public function callback(Request $request)
+    {
+        $code = $request->code;
 
-    if (!$code) {
+        if (!$code) {
+            dd([
+                'step' => 'NO CODE',
+                'request' => $request->all()
+            ]);
+        }
+
+        /*
+        |--------------------------------------
+        | STEP 1: GET ACCESS TOKEN
+        |--------------------------------------
+        */
+        $tokenResponse = Http::timeout(30)->get(
+            'https://auth.tiktok-shops.com/api/v2/token/get',
+            [
+                'app_key' => config('services.tiktok.app_key'),
+                'app_secret' => config('services.tiktok.app_secret'),
+                'auth_code' => $code,
+                'grant_type' => 'authorized_code',
+            ]
+        );
+
+        $json = $tokenResponse->json();
+
+        if (($json['code'] ?? -1) != 0) {
+            dd([
+                'step' => 'TOKEN ERROR',
+                'response' => $json
+            ]);
+        }
+
+        $data = $json['data'] ?? [];
+
+        $accessToken = $data['access_token'] ?? null;
+        $refreshToken = $data['refresh_token'] ?? null;
+        $openId = $data['open_id'] ?? null;
+
+        if (!$accessToken) {
+            dd([
+                'step' => 'ACCESS TOKEN NULL',
+                'data' => $data
+            ]);
+        }
+
+        /*
+        |--------------------------------------
+        | STEP 2: GET SHOP INFO
+        |--------------------------------------
+        */
+        $shopResponse = Http::withHeaders([
+            'Access-Token' => $accessToken,
+            'Content-Type' => 'application/json',
+        ])->get(
+                'https://open-api.tiktokglobalshop.com/api/seller/account/get_seller_shop',
+                [
+                    'app_key' => config('services.tiktok.app_key'),
+                    'timestamp' => time(),
+                ]
+            );
+
+        $shopJson = $shopResponse->json();
+
+        if (($shopJson['code'] ?? -1) != 0) {
+            dd([
+                'step' => 'SHOP ERROR',
+                'response' => $shopJson
+            ]);
+        }
+
+        $shopData = $shopJson['data']['shops'][0] ?? [];
+
+        $shopId = $shopData['shop_id'] ?? null;
+        $shopName = $shopData['shop_name'] ?? null;
+
+        /*
+        |--------------------------------------
+        | FINAL DEBUG OUTPUT
+        |--------------------------------------
+        */
         dd([
-            'step' => 'NO CODE',
-            'request' => $request->all()
+            'step' => 'SUCCESS',
+            'open_id' => $openId,
+            'shop_id' => $shopId,
+            'shop_name' => $shopName,
+            'access_token' => $accessToken,
+            'refresh_token' => $refreshToken,
+            'token_raw' => $data,
+            'shop_raw' => $shopJson,
         ]);
     }
-
-    /*
-    |--------------------------------------
-    | STEP 1: GET ACCESS TOKEN
-    |--------------------------------------
-    */
-    $tokenResponse = Http::timeout(30)->get(
-        'https://auth.tiktok-shops.com/api/v2/token/get',
-        [
-            'app_key' => config('services.tiktok.app_key'),
-            'app_secret' => config('services.tiktok.app_secret'),
-            'auth_code' => $code,
-            'grant_type' => 'authorized_code',
-        ]
-    );
-
-    $json = $tokenResponse->json();
-
-    if (($json['code'] ?? -1) != 0) {
-        dd([
-            'step' => 'TOKEN ERROR',
-            'response' => $json
-        ]);
-    }
-
-    $data = $json['data'] ?? [];
-
-    $accessToken  = $data['access_token'] ?? null;
-    $refreshToken = $data['refresh_token'] ?? null;
-    $openId       = $data['open_id'] ?? null;
-
-    if (!$accessToken) {
-        dd([
-            'step' => 'ACCESS TOKEN NULL',
-            'data' => $data
-        ]);
-    }
-
-    /*
-    |--------------------------------------
-    | STEP 2: GET SHOP INFO
-    |--------------------------------------
-    */
-$shopResponse = Http::withHeaders([
-    'Access-Token' => $accessToken,
-    'Content-Type' => 'application/json',
-])->get(
-    'https://open-api.tiktokglobalshop.com/api/seller/account/get_seller_shop',
-    [
-        'app_key' => config('services.tiktok.app_key'),
-        'timestamp' => time(),
-    ]
-);
-
-    $shopJson = $shopResponse->json();
-
-    if (($shopJson['code'] ?? -1) != 0) {
-        dd([
-            'step' => 'SHOP ERROR',
-            'response' => $shopJson
-        ]);
-    }
-
-    $shopData = $shopJson['data']['shops'][0] ?? [];
-
-    $shopId   = $shopData['shop_id'] ?? null;
-    $shopName = $shopData['shop_name'] ?? null;
-
-    /*
-    |--------------------------------------
-    | FINAL DEBUG OUTPUT
-    |--------------------------------------
-    */
-    dd([
-        'step' => 'SUCCESS',
-        'open_id' => $openId,
-        'shop_id' => $shopId,
-        'shop_name' => $shopName,
-        'access_token' => $accessToken,
-        'refresh_token' => $refreshToken,
-        'token_raw' => $data,
-        'shop_raw' => $shopJson,
-    ]);
-}
     public function disconnect(MarketplaceAccount $account)
     {
         $this->authorize('delete', $account);

@@ -101,11 +101,28 @@ class MarketplaceConnectionController extends Controller
         $shopCipher = $data['open_id'] ?? null;
         $shopId = $data['shop_id'] ?? $shopCipher;
 
+        $shopLookupPath = '/api/shop/get_authorized_shop';
+        $shopLookupParams = [
+            'app_key' => config('services.tiktok.app_key'),
+            'timestamp' => (string) time(),
+            'access_token' => $accessToken,
+            'shop_cipher' => $shopCipher,
+        ];
+        $shopLookupParams['sign'] = $this->makeSign($shopLookupPath, $shopLookupParams);
+
+        $shopLookupResponse = Http::timeout(30)
+            ->withHeaders([
+                'Access-Token' => $accessToken,
+            ])
+            ->get(rtrim(config('services.tiktok.host', 'https://open-api.tiktokglobalshop.com'), '/') . $shopLookupPath, $shopLookupParams);
+
         dd([
             'request' => $request->all(),
             'state_data' => $stateData,
             'company_id' => $companyId,
             'token_response' => $json,
+            'shop_lookup_params' => $shopLookupParams,
+            'shop_lookup_response' => $shopLookupResponse->json(),
             'computed_account' => [
                 'platform' => 'tiktok',
                 'shop_id' => $shopId,

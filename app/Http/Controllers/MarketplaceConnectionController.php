@@ -65,107 +65,57 @@ class MarketplaceConnectionController extends Controller
 
     public function callback(Request $request)
     {
-        try {
-            $user = Auth::user();
-            $stateData = $this->decodeOAuthState($request->state);
-            $companyId = $user?->company_id
-                ?? ($stateData['company_id'] ?? null)
-                ?? session('company_id')
-                ?? session('oauth_company_id');
+        $user = Auth::user();
+        $stateData = $this->decodeOAuthState($request->state);
+        $companyId = $user?->company_id
+            ?? ($stateData['company_id'] ?? null)
+            ?? session('company_id')
+            ?? session('oauth_company_id');
 
-            $code = $request->code;
+        $code = $request->code;
 
-            if (!$code) {
-                return redirect()
-                    ->route('marketplace.accounts')
-                    ->with('error', 'Authorization code tidak ditemukan');
-            }
-
-            $tokenResponse = Http::timeout(30)->get(
-                'https://auth.tiktok-shops.com/api/v2/token/get',
-                [
-                    'app_key' => config('services.tiktok.app_key'),
-                    'app_secret' => config('services.tiktok.app_secret'),
-                    'auth_code' => $code,
-                    'grant_type' => 'authorized_code',
-                ]
-            );
-
-            $json = $tokenResponse->json();
-
-            if (($json['code'] ?? -1) != 0) {
-                return redirect()
-                    ->route('marketplace.accounts')
-                    ->with('error', $json['message'] ?? 'Gagal mengambil access token');
-            }
-
-            $data = $json['data'] ?? [];
-            $accessToken = $data['access_token'] ?? null;
-            $refreshToken = $data['refresh_token'] ?? null;
-
-            if (!$accessToken) {
-                return redirect()
-                    ->route('marketplace.accounts')
-                    ->with('error', 'Access token TikTok tidak ditemukan');
-            }
-
-            $shopCipher = $data['open_id'] ?? null;
-            $shopId = $data['shop_id'] ?? $shopCipher;
-
-            if (!$companyId) {
-                return redirect()
-                    ->route('marketplace.accounts')
-                    ->with('error', 'Company tidak ditemukan. Silakan login ulang lalu hubungkan kembali marketplace.');
-            }
-
+        if (!$code) {
             dd([
+                'step' => 'NO CODE',
                 'request' => $request->all(),
                 'state_data' => $stateData,
                 'company_id' => $companyId,
-                'token_response' => $json,
-                'computed_account' => [
-                    'platform' => 'tiktok',
-                    'shop_id' => $shopId,
-                    'shop_cipher' => $shopCipher,
-                    'shop_name' => $data['seller_name'] ?? 'TikTok Shop',
-                    'access_token' => $accessToken,
-                    'refresh_token' => $refreshToken,
-                    'expired_at' => $this->resolveAccessTokenExpiry($data) ?? now()->addSeconds((int) ($data['access_token_expire_in'] ?? 86400)),
-                ],
             ]);
-
-            MarketplaceAccount::updateOrCreate(
-                [
-                    'platform' => 'tiktok',
-                    'shop_id' => $shopId,
-                    'company_id' => $companyId,
-                ],
-                [
-                    'company_id' => $companyId,
-                    'shop_id' => $shopId,
-                    'shop_cipher' => $shopCipher,
-                    'shop_name' => $data['seller_name'] ?? 'TikTok Shop',
-                    'access_token' => $accessToken,
-                    'refresh_token' => $refreshToken,
-                    'expired_at' => $this->resolveAccessTokenExpiry($data) ?? now()->addSeconds((int) ($data['access_token_expire_in'] ?? 86400)),
-                ]
-            );
-
-            return redirect()
-                ->route('marketplace.accounts')
-                ->with('success', 'TikTok Shop berhasil terhubung');
-        } catch (\Throwable $e) {
-            Log::error('TikTok callback failed', [
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return redirect()
-                ->route('marketplace.accounts')
-                ->with('error', 'Terjadi kesalahan saat menghubungkan TikTok Shop: ' . $e->getMessage());
         }
+
+        $tokenResponse = Http::timeout(30)->get(
+            'https://auth.tiktok-shops.com/api/v2/token/get',
+            [
+                'app_key' => config('services.tiktok.app_key'),
+                'app_secret' => config('services.tiktok.app_secret'),
+                'auth_code' => $code,
+                'grant_type' => 'authorized_code',
+            ]
+        );
+
+        $json = $tokenResponse->json();
+
+        $data = $json['data'] ?? [];
+        $accessToken = $data['access_token'] ?? null;
+        $refreshToken = $data['refresh_token'] ?? null;
+        $shopCipher = $data['open_id'] ?? null;
+        $shopId = $data['shop_id'] ?? $shopCipher;
+
+        dd([
+            'request' => $request->all(),
+            'state_data' => $stateData,
+            'company_id' => $companyId,
+            'token_response' => $json,
+            'computed_account' => [
+                'platform' => 'tiktok',
+                'shop_id' => $shopId,
+                'shop_cipher' => $shopCipher,
+                'shop_name' => $data['seller_name'] ?? 'TikTok Shop',
+                'access_token' => $accessToken,
+                'refresh_token' => $refreshToken,
+                'expired_at' => $this->resolveAccessTokenExpiry($data) ?? now()->addSeconds((int) ($data['access_token_expire_in'] ?? 86400)),
+            ],
+        ]);
     }
 
     /*

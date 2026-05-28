@@ -62,85 +62,80 @@ class MarketplaceConnectionController extends Controller
         }
     }
 
-    public function callback(Request $request)
-    {
-        try {
+   public function callback(Request $request)
+{
+    try {
+        $code = $request->code;
 
-            $code = $request->code;
+        if (!$code) {
+            return response()->json(['error' => 'CODE KOSONG']);
+        }
 
-            if (!$code) {
-                return response()->json(['error' => 'code kosong']);
-            }
-
-            // 1. GET TOKEN
-            $token = Http::get('https://auth.tiktok-shops.com/api/v2/token/get', [
+        // =========================
+        // 1. GET TOKEN
+        // =========================
+        $tokenResponse = Http::asForm()->post(
+            'https://auth.tiktok-shops.com/api/v2/token/get',
+            [
                 'app_key' => config('services.tiktok.app_key'),
                 'app_secret' => config('services.tiktok.app_secret'),
                 'auth_code' => $code,
                 'grant_type' => 'authorized_code',
-            ])->json();
+            ]
+        )->json();
 
-            // DEBUG AMAN
-            if (!isset($token['data']['access_token'])) {
-                return response()->json([
-                    'error' => 'TOKEN GAGAL',
-                    'response' => $token
-                ]);
-            }
-
-            $accessToken = $token['data']['access_token'];
-
-            // 2. SIGN
-            $appKey = config('services.tiktok.app_key');
-            $appSecret = config('services.tiktok.app_secret');
-            $timestamp = time();
-
-            $params = [
-                'app_key' => $appKey,
-                'timestamp' => $timestamp,
-            ];
-
-            $path = "/authorization/202309/shops";
-
-            $params = [
-                'app_key' => $appKey,
-                'timestamp' => $timestamp,
-            ];
-
-            ksort($params);
-
-            $baseString = $appSecret . $path;
-
-            foreach ($params as $k => $v) {
-                $baseString .= $k . $v;
-            }
-
-            $baseString .= $appSecret;
-
-            $sign = hash_hmac('sha256', $baseString, $appSecret);
-
-            // 3. CALL SHOPS
-            $shops = Http::withHeaders([
-                'x-tts-access-token' => $accessToken,
-            ])->get('https://open-api.tiktokglobalshop.com/authorization/202309/shops', [
-                        'app_key' => $appKey,
-                        'timestamp' => $timestamp,
-                        'sign' => $sign,
-                    ])->json();
-
+        if (!isset($tokenResponse['data']['access_token'])) {
             return response()->json([
-                'token' => $token,
-                'shops' => $shops,
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'SERVER ERROR',
-                'message' => $e->getMessage(),
+                'error' => 'TOKEN GAGAL',
+                'response' => $tokenResponse
             ]);
         }
-    }
 
+        $accessToken = $tokenResponse['data']['access_token'];
+
+        // =========================
+        // 2. GET SHOPS (FIX SIGN)
+        // =========================
+        $appKey = config('services.tiktok.app_key');
+        $appSecret = config('services.tiktok.app_secret');
+        $timestamp = time();
+
+        $params = [
+            'app_key' => $appKey,
+            'timestamp' => $timestamp,
+        ];
+
+        ksort($params);
+
+        $queryString = '';
+        foreach ($params as $k => $v) {
+            $queryString .= $k . $v;
+        }
+
+        $signString = $appSecret . '/authorization/202309/shops' . $queryString . $appSecret;
+
+        $sign = hash_hmac('sha256', $signString, $appSecret);
+
+        $shopsResponse = Http::withHeaders([
+            'x-tts-access-token' => $accessToken,
+        ])->get('https://open-api.tiktokglobalshop.com/authorization/202309/shops', [
+            'app_key' => $appKey,
+            'timestamp' => $timestamp,
+            'sign' => $sign,
+        ])->json();
+
+        return response()->json([
+            'token' => $accessToken,
+            'shops' => $shopsResponse,
+        ]);
+
+    } catch (\Throwable $e) {
+        return response()->json([
+            'error' => 'SERVER ERROR',
+            'message' => $e->getMessage(),
+        ]);
+    }
+}
     public function getAccessToken($code)
     {
         $response = Http::timeout(30)->get(

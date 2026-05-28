@@ -63,21 +63,20 @@ class MarketplaceConnectionController extends Controller
     }
 
 
-    public function callback(Request $request)
-    {
+   public function callback(Request $request)
+{
+    try {
+
         $code = $request->code;
 
         if (!$code) {
-            dd([
-                'step' => 'NO CODE',
-                'request' => $request->all()
-            ]);
+            dd(['step' => 'NO CODE', 'request' => $request->all()]);
         }
 
         /*
-        |--------------------------------------
-        | STEP 1: GET ACCESS TOKEN
-        |--------------------------------------
+        |----------------------
+        | TOKEN
+        |----------------------
         */
         $tokenResponse = Http::timeout(30)->get(
             'https://auth.tiktok-shops.com/api/v2/token/get',
@@ -92,80 +91,78 @@ class MarketplaceConnectionController extends Controller
         $json = $tokenResponse->json();
 
         if (($json['code'] ?? -1) != 0) {
-            dd([
-                'step' => 'TOKEN ERROR',
-                'response' => $json
-            ]);
+            dd(['TOKEN ERROR' => $json]);
         }
 
         $data = $json['data'] ?? [];
 
-        $accessToken  = $data['access_token'] ?? null;
-        $refreshToken = $data['refresh_token'] ?? null;
-        $openId       = $data['open_id'] ?? null;
+        $accessToken = $data['access_token'] ?? null;
 
         if (!$accessToken) {
-            dd([
-                'step' => 'ACCESS TOKEN NULL',
-                'data' => $data
-            ]);
+            dd(['ACCESS TOKEN NULL' => $data]);
         }
 
         /*
-        |--------------------------------------
-        | STEP 2: GET SHOP INFO (FIXED + SIGN)
-        |--------------------------------------
+        |----------------------
+        | SHOP REQUEST
+        |----------------------
         */
+        $path = "/api/shop/get_authorized_shop";
+        $timestamp = time();
 
-       $path = "/api/shop/get_authorized_shop";
+        $params = [
+            'app_key' => config('services.tiktok.app_key'),
+            'timestamp' => $timestamp,
+        ];
 
-$timestamp = time();
+        $params['sign'] = $this->makeSign($path, $params);
 
-$params = [
-    'app_key' => config('services.tiktok.app_key'),
-    'timestamp' => $timestamp,
-];
+        $shopResponse = Http::withHeaders([
+            'x-tts-access-token' => $accessToken,
+        ])->get(
+            'https://open-api-sg.tiktokglobalshop.com' . $path,
+            $params
+        );
 
-$params['sign'] = $this->makeSign($path, $params);
+        $shopJson = $shopResponse->json();
 
-$shopResponse = Http::withHeaders([
-    'x-tts-access-token' => $accessToken,
-    'Content-Type' => 'application/json',
-])->get(
-    'https://open-api-sg.tiktokglobalshop.com' . $path,
-    $params
-);
-
-$shopJson = $shopResponse->json();
-        if (($shopJson['code'] ?? -1) != 0) {
+        /*
+        |----------------------
+        | SAFE CHECK (INI PENTING)
+        |----------------------
+        */
+        if (!is_array($shopJson)) {
             dd([
-                'step' => 'SHOP ERROR',
-                'response' => $shopJson
+                'SHOP RESPONSE NOT ARRAY' => $shopResponse->body()
             ]);
         }
 
-        $shopData = $shopJson['data']['shops'][0] ?? [];
+        if (($shopJson['code'] ?? -1) != 0) {
+            dd(['SHOP ERROR' => $shopJson]);
+        }
 
-        $shopId   = $shopData['shop_id'] ?? null;
+        $shopData = $shopJson['data']['shops'][0] ?? null;
+
+        $shopId = $shopData['shop_id'] ?? null;
         $shopName = $shopData['shop_name'] ?? null;
 
-        /*
-        |--------------------------------------
-        | FINAL RESULT
-        |--------------------------------------
-        */
         dd([
-            'step' => 'SUCCESS',
-            'open_id' => $openId,
+            'SUCCESS',
             'shop_id' => $shopId,
             'shop_name' => $shopName,
-            'access_token' => $accessToken,
-            'refresh_token' => $refreshToken,
-            'raw_token' => $data,
+            'open_id' => $data['open_id'] ?? null,
             'raw_shop' => $shopJson,
         ]);
-    }
 
+    } catch (\Throwable $e) {
+        dd([
+            'EXCEPTION ERROR',
+            'message' => $e->getMessage(),
+            'line' => $e->getLine(),
+            'file' => $e->getFile(),
+        ]);
+    }
+}
     /*
     |--------------------------------------
     | SIGNATURE GENERATOR (WAJIB)

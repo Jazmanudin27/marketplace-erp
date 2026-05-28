@@ -62,6 +62,7 @@ class MarketplaceConnectionController extends Controller
         }
     }
 
+
     public function callback(Request $request)
     {
         $code = $request->code;
@@ -99,9 +100,9 @@ class MarketplaceConnectionController extends Controller
 
         $data = $json['data'] ?? [];
 
-        $accessToken = $data['access_token'] ?? null;
+        $accessToken  = $data['access_token'] ?? null;
         $refreshToken = $data['refresh_token'] ?? null;
-        $openId = $data['open_id'] ?? null;
+        $openId       = $data['open_id'] ?? null;
 
         if (!$accessToken) {
             dd([
@@ -112,19 +113,27 @@ class MarketplaceConnectionController extends Controller
 
         /*
         |--------------------------------------
-        | STEP 2: GET SHOP INFO
+        | STEP 2: GET SHOP INFO (FIXED + SIGN)
         |--------------------------------------
         */
+
+        $path = "/api/shop/get_authorized_shop";
+        $timestamp = time();
+
+        $params = [
+            'app_key' => config('services.tiktok.app_key'),
+            'timestamp' => $timestamp,
+        ];
+
+        // generate sign
+        $params['sign'] = $this->makeSign($path, $params);
+
         $shopResponse = Http::withHeaders([
             'Access-Token' => $accessToken,
-            'Content-Type' => 'application/json',
         ])->get(
-                'https://open-api.tiktokglobalshop.com/api/seller/account/get_seller_shop',
-                [
-                    'app_key' => config('services.tiktok.app_key'),
-                    'timestamp' => time(),
-                ]
-            );
+            'https://open-api.tiktokglobalshop.com' . $path,
+            $params
+        );
 
         $shopJson = $shopResponse->json();
 
@@ -137,12 +146,12 @@ class MarketplaceConnectionController extends Controller
 
         $shopData = $shopJson['data']['shops'][0] ?? [];
 
-        $shopId = $shopData['shop_id'] ?? null;
+        $shopId   = $shopData['shop_id'] ?? null;
         $shopName = $shopData['shop_name'] ?? null;
 
         /*
         |--------------------------------------
-        | FINAL DEBUG OUTPUT
+        | FINAL RESULT
         |--------------------------------------
         */
         dd([
@@ -152,9 +161,33 @@ class MarketplaceConnectionController extends Controller
             'shop_name' => $shopName,
             'access_token' => $accessToken,
             'refresh_token' => $refreshToken,
-            'token_raw' => $data,
-            'shop_raw' => $shopJson,
+            'raw_token' => $data,
+            'raw_shop' => $shopJson,
         ]);
+    }
+
+    /*
+    |--------------------------------------
+    | SIGNATURE GENERATOR (WAJIB)
+    |--------------------------------------
+    */
+    private function makeSign($path, $params)
+    {
+        $appSecret = config('services.tiktok.app_secret');
+
+        unset($params['sign']);
+
+        ksort($params);
+
+        $baseString = $path;
+
+        foreach ($params as $key => $value) {
+            $baseString .= $key . $value;
+        }
+
+        $stringToSign = $appSecret . $baseString . $appSecret;
+
+        return hash_hmac('sha256', $stringToSign, $appSecret);
     }
     public function disconnect(MarketplaceAccount $account)
     {

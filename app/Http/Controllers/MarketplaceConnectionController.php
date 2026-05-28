@@ -110,19 +110,19 @@ class MarketplaceConnectionController extends Controller
         'timestamp' => time(),
     ];
 
-    ksort($params);
+   ksort($params);
 
-    $baseString = $path;
+$signString = $path;
 
-    foreach ($params as $k => $v) {
-        $baseString .= $k . $v;
-    }
+foreach ($params as $key => $value) {
+    $signString .= $key . $value;
+}
 
-    $sign = hash_hmac(
-        'sha256',
-        $baseString,
-        config('services.tiktok.app_secret')
-    );
+$sign = hash_hmac(
+    'sha256',
+    config('services.tiktok.app_secret') . $signString . config('services.tiktok.app_secret'),
+    config('services.tiktok.app_secret')
+);
 
     $params['sign'] = $sign;
 
@@ -143,7 +143,7 @@ class MarketplaceConnectionController extends Controller
         'json' => $shopJson,
         'access_token' => $accessToken,
         'params' => $params,
-        'base_string' => $baseString
+        'base_string' => $signString
     ]);
 }
     public function disconnect(MarketplaceAccount $account)

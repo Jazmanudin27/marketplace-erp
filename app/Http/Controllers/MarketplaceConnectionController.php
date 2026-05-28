@@ -106,7 +106,6 @@ class MarketplaceConnectionController extends Controller
             'app_key' => config('services.tiktok.app_key'),
             'timestamp' => (string) time(),
             'access_token' => $accessToken,
-            'shop_cipher' => $shopCipher,
         ];
         $shopLookupParams['sign'] = $this->makeSign($shopLookupPath, $shopLookupParams);
 

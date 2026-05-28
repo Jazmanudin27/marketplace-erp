@@ -64,75 +64,27 @@ class MarketplaceConnectionController extends Controller
 
 
     public function callback(Request $request)
-    {
-        $user = Auth::user();
-        $stateData = $this->decodeOAuthState($request->state);
-        $companyId = $user?->company_id
-            ?? ($stateData['company_id'] ?? null)
-            ?? session('company_id')
-            ?? session('oauth_company_id');
+{
+    $shopId = $request->segment(4);
+    $state = $request->query('state');
 
-        $code = $request->code;
+    $region = $request->query('region_check');
+    $shopRegion = $request->query('shop_region');
 
-        if (!$code) {
-            dd([
-                'step' => 'NO CODE',
-                'request' => $request->all(),
-                'state_data' => $stateData,
-                'company_id' => $companyId,
-            ]);
-        }
-
-        $tokenResponse = Http::timeout(30)->get(
-            'https://auth.tiktok-shops.com/api/v2/token/get',
-            [
-                'app_key' => config('services.tiktok.app_key'),
-                'app_secret' => config('services.tiktok.app_secret'),
-                'auth_code' => $code,
-                'grant_type' => 'authorized_code',
-            ]
-        );
-
-        $json = $tokenResponse->json();
-
-        $data = $json['data'] ?? [];
-        $accessToken = $data['access_token'] ?? null;
-        $refreshToken = $data['refresh_token'] ?? null;
-        $shopCipher = $data['open_id'] ?? null;
-        $shopId = $data['shop_id'] ?? $shopCipher;
-
-        $shopLookupPath = '/authorization/202309/shops';
-        $shopLookupParams = [
-            'app_key' => config('services.tiktok.app_key'),
-            'timestamp' => (string) time(),
-        ];
-        $shopLookupParams['sign'] = $this->makeSign($shopLookupPath, $shopLookupParams);
-
-        $shopLookupResponse = Http::timeout(30)
-            ->withHeaders([
-                'x-tts-access-token' => $accessToken,
-                'content-type' => 'application/json',
-            ])
-            ->get(rtrim(config('services.tiktok.host', 'https://open-api.tiktokglobalshop.com'), '/') . $shopLookupPath, $shopLookupParams);
-
-        dd([
-            'request' => $request->all(),
-            'state_data' => $stateData,
-            'company_id' => $companyId,
-            'token_response' => $json,
-            'shop_lookup_params' => $shopLookupParams,
-            'shop_lookup_response' => $shopLookupResponse->json(),
-            'computed_account' => [
-                'platform' => 'tiktok',
-                'shop_id' => $shopId,
-                'shop_cipher' => $shopCipher,
-                'shop_name' => $data['seller_name'] ?? 'TikTok Shop',
-                'access_token' => $accessToken,
-                'refresh_token' => $refreshToken,
-                'expired_at' => $this->resolveAccessTokenExpiry($data) ?? now()->addSeconds((int) ($data['access_token_expire_in'] ?? 86400)),
-            ],
-        ]);
+    // decode state (Laravel encrypted)
+    try {
+        $decodedState = Crypt::decryptString($state);
+    } catch (\Exception $e) {
+        $decodedState = null;
     }
+
+    dd([
+        'shop_id' => $shopId,
+        'state' => $decodedState,
+        'query' => $request->query(),
+        'full_url' => $request->fullUrl(),
+    ]);
+}
 
     /*
     |--------------------------------------

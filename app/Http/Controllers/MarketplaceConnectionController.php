@@ -118,7 +118,7 @@ class MarketplaceConnectionController extends Controller
     $shopResponse = Http::withHeaders([
         'Access-Token' => $accessToken,
     ])->get(
-        'https://open-api.tiktokglobalshop.com/api/v2/shop/get_authorized_shop',
+        'https://open-api.tiktokglobalshop.com/api/shop/get_authorized_shop',
         [
             'app_key' => config('services.tiktok.app_key'),
             'timestamp' => time(),

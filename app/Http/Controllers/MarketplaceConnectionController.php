@@ -149,9 +149,6 @@ class MarketplaceConnectionController extends Controller
             ]
         );
 
-        return redirect()
-            ->route('marketplace.accounts')
-            ->with('success', 'TikTok Shop berhasil terhubung');
     }
 
     public function disconnect(MarketplaceAccount $account)

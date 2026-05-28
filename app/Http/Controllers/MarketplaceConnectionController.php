@@ -63,89 +63,64 @@ class MarketplaceConnectionController extends Controller
     }
 
     public function callback(Request $request)
-    {
-        $code = $request->code;
+{
+    $code = $request->code;
 
-        if (!$code) {
-            dd([
-                'error' => 'Authorization code tidak ditemukan',
-                'request' => $request->all()
-            ]);
-        }
-
-        $tokenResponse = Http::timeout(30)->get(
-            'https://auth.tiktok-shops.com/api/v2/token/get',
-            [
-                'app_key' => config('services.tiktok.app_key'),
-                'app_secret' => config('services.tiktok.app_secret'),
-                'auth_code' => $code,
-                'grant_type' => 'authorized_code',
-            ]
-        );
-
-        $json = $tokenResponse->json();
-
-        if (($json['code'] ?? -1) != 0) {
-            dd([
-                'step' => 'TOKEN ERROR',
-                'response' => $json
-            ]);
-        }
-
-        $data = $json['data'] ?? [];
-
-        $accessToken = $data['access_token'] ?? null;
-
-        if (!$accessToken) {
-            dd([
-                'step' => 'ACCESS TOKEN NULL',
-                'data' => $data
-            ]);
-        }
-
-        $path = '/authorization/202309/shops';
-
-        $params = [
-            'app_key' => config('services.tiktok.app_key'),
-            'timestamp' => time(),
-        ];
-
-        ksort($params);
-
-        $signString = $path;
-
-        foreach ($params as $key => $value) {
-            $signString .= $key . $value;
-        }
-
-        $sign = hash_hmac(
-            'sha256',
-            config('services.tiktok.app_secret') . $signString . config('services.tiktok.app_secret'),
-            config('services.tiktok.app_secret')
-        );
-
-        $params['sign'] = $sign;
-
-        $shopResponse = Http::withHeaders([
-            'x-tts-access-token' => $accessToken,
-            'content-type' => 'application/json',
-        ])->get(
-                'https://open-api.tiktokglobalshop.com' . $path,
-                $params
-            );
-
-        $shopJson = $shopResponse->json();
-
+    if (!$code) {
         dd([
-            'step' => 'SHOP API RESPONSE',
-            'status' => $shopResponse->status(),
-            'body' => $shopResponse->body(),
-            'json' => $shopJson,
-            'access_token' => $accessToken,
-            'params' => $params,
-            'base_string' => $signString
+            'error' => 'Authorization code tidak ditemukan',
+            'request' => $request->all()
         ]);
     }
+
+    $tokenResponse = Http::timeout(30)->get(
+        'https://auth.tiktok-shops.com/api/v2/token/get',
+        [
+            'app_key' => config('services.tiktok.app_key'),
+            'app_secret' => config('services.tiktok.app_secret'),
+            'auth_code' => $code,
+            'grant_type' => 'authorized_code',
+        ]
+    );
+
+    $json = $tokenResponse->json();
+
+    if (($json['code'] ?? -1) != 0) {
+        dd([
+            'step' => 'TOKEN ERROR',
+            'response' => $json
+        ]);
+    }
+
+    $data = $json['data'] ?? [];
+
+    $accessToken = $data['access_token'] ?? null;
+
+    if (!$accessToken) {
+        dd([
+            'step' => 'ACCESS TOKEN NULL',
+            'data' => $data
+        ]);
+    }
+
+    /*
+    |--------------------------------------
+    | DEBUG DATA (INI YANG KAMU CARI)
+    |--------------------------------------
+    */
+
+    dd([
+        'step' => 'OAUTH SUCCESS',
+        'open_id' => $data['open_id'] ?? null,
+        'seller_name' => $data['seller_name'] ?? null,
+        'seller_base_region' => $data['seller_base_region'] ?? null,
+        'user_type' => $data['user_type'] ?? null,
+        'access_token' => $accessToken,
+        'refresh_token' => $data['refresh_token'] ?? null,
+        'expire' => $data['access_token_expire_in'] ?? null,
+        'raw' => $data
+    ]);
+}
     public function disconnect(MarketplaceAccount $account)
     {
         $this->authorize('delete', $account);

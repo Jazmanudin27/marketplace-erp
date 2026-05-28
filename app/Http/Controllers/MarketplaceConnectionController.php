@@ -115,15 +115,16 @@ class MarketplaceConnectionController extends Controller
     | STEP 2: GET SHOP INFO
     |--------------------------------------
     */
-    $shopResponse = Http::withHeaders([
-        'Access-Token' => $accessToken,
-    ])->get(
-        'https://open-api.tiktokglobalshop.com/api/shop/get_authorized_shop',
-        [
-            'app_key' => config('services.tiktok.app_key'),
-            'timestamp' => time(),
-        ]
-    );
+$shopResponse = Http::withHeaders([
+    'Access-Token' => $accessToken,
+    'Content-Type' => 'application/json',
+])->get(
+    'https://open-api.tiktokglobalshop.com/api/seller/account/get_seller_shop',
+    [
+        'app_key' => config('services.tiktok.app_key'),
+        'timestamp' => time(),
+    ]
+);
 
     $shopJson = $shopResponse->json();
 

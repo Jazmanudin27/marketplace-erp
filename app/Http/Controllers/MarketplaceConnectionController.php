@@ -100,17 +100,6 @@ class MarketplaceConnectionController extends Controller
                     'platform' => 'tiktok',
                     'shop_id' => $shopId,
                 ],
-                [
-                    'shop_name' => $data['shop_name'] ?? $data['seller_name'] ?? null,
-
-                    'access_token' => $data['access_token'],
-
-                    'refresh_token' => $data['refresh_token'],
-
-                    'expired_at' => now()->addSeconds($data['access_token_expire_in']),
-
-                    'company_id' => Auth::user()->company_id ?? 1,
-                ]
             );
 
             return redirect()

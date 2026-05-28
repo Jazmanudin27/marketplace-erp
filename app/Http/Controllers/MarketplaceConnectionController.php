@@ -65,110 +65,109 @@ class MarketplaceConnectionController extends Controller
 
     public function callback(Request $request)
     {
-        $code = $request->code;
+        try {
 
-        if (!$code) {
-            dd([
-                'step' => 'NO CODE',
-                'request' => $request->all()
-            ]);
-        }
+            $code = $request->code;
 
-        /*
-        |--------------------------------------
-        | 1. GET ACCESS TOKEN (AUTH SERVER)
-        |--------------------------------------
-        */
-        $tokenResponse = Http::timeout(30)->get(
-            'https://auth.tiktok-shops.com/api/v2/token/get',
-            [
+            if (!$code) {
+                dd(['step' => 'NO CODE', 'request' => $request->all()]);
+            }
+
+            /*
+            |----------------------
+            | TOKEN
+            |----------------------
+            */
+            $tokenResponse = Http::timeout(30)->get(
+                'https://auth.tiktok-shops.com/api/v2/token/get',
+                [
+                    'app_key' => config('services.tiktok.app_key'),
+                    'app_secret' => config('services.tiktok.app_secret'),
+                    'auth_code' => $code,
+                    'grant_type' => 'authorized_code',
+                ]
+            );
+
+            $json = $tokenResponse->json();
+
+            if (($json['code'] ?? -1) != 0) {
+                dd(['TOKEN ERROR' => $json]);
+            }
+
+            $data = $json['data'] ?? [];
+
+            $accessToken = $data['access_token'] ?? null;
+
+            if (!$accessToken) {
+                dd(['ACCESS TOKEN NULL' => $data]);
+            }
+
+            /*
+            |----------------------
+            | SHOP REQUEST
+            |----------------------
+            */
+            $path = "/api/shop/get_authorized_shop";
+
+            $params = [
                 'app_key' => config('services.tiktok.app_key'),
-                'app_secret' => config('services.tiktok.app_secret'),
-                'auth_code' => $code,
-                'grant_type' => 'authorized_code',
-            ]
-        );
+                'timestamp' => time(),
+            ];
 
-        $json = $tokenResponse->json();
+            $params['sign'] = $this->makeSign($path, $params);
 
-        if (($json['code'] ?? -1) != 0) {
+            $shopResponse = Http::withHeaders([
+                'Access-Token' => $accessToken, // 👈 PAKAI INI (BUKAN x-tts)
+            ])->get(
+                    'https://open-api.tiktokglobalshop.com' . $path,
+                    $params
+                );
+
+
+            $shopJson = $shopResponse->json();
+
+            /*
+            |----------------------
+            | SAFE CHECK (INI PENTING)
+            |----------------------
+            */
+            if (!is_array($shopJson)) {
+                dd([
+                    'SHOP RESPONSE NOT ARRAY' => $shopResponse->body()
+                ]);
+            }
+
+            if (($shopJson['code'] ?? -1) != 0) {
+                dd(['SHOP ERROR' => $shopJson]);
+            }
+
+            $shopData = $shopJson['data']['shops'][0] ?? null;
+
+            $shopId = $shopData['shop_id'] ?? null;
+            $shopName = $shopData['shop_name'] ?? null;
+
             dd([
-                'STEP' => 'TOKEN ERROR',
-                'RESPONSE' => $json
+                'SUCCESS',
+                'shop_id' => $shopId,
+                'shop_name' => $shopName,
+                'open_id' => $data['open_id'] ?? null,
+                'raw_shop' => $shopJson,
+            ]);
+
+        } catch (\Throwable $e) {
+            dd([
+                'EXCEPTION ERROR',
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
             ]);
         }
-
-        $data = $json['data'];
-
-        $accessToken = $data['access_token'];
-        $refreshToken = $data['refresh_token'];
-        $openId = $data['open_id'];
-
-        /*
-        |--------------------------------------
-        | 2. GET SHOP INFO (GLOBAL CLUSTER FIX)
-        |--------------------------------------
-        */
-        $baseUrl = 'https://open-api.tiktokglobalshop.com';
-        $path = '/api/shop/get_authorized_shop';
-        $timestamp = time();
-
-        $params = [
-            'app_key' => config('services.tiktok.app_key'),
-            'timestamp' => $timestamp,
-            'access_token' => $accessToken, // WAJIB QUERY
-        ];
-
-        $params['sign'] = $this->makeSign($path, $params);
-
-        $shopResponse = Http::withHeaders([
-            'Access-Token' => $accessToken,
-        ])->get($baseUrl . $path, $params);
-
-        $shopJson = $shopResponse->json();
-
-        /*
-        |--------------------------------------
-        | SAFE CHECK RESPONSE
-        |--------------------------------------
-        */
-        if (!is_array($shopJson)) {
-            dd([
-                'STEP' => 'SHOP RESPONSE INVALID',
-                'RAW' => $shopResponse->body()
-            ]);
-        }
-
-        if (($shopJson['code'] ?? -1) != 0) {
-            dd([
-                'STEP' => 'SHOP ERROR',
-                'RESPONSE' => $shopJson,
-                'DEBUG_PARAMS' => $params
-            ]);
-        }
-
-        $shopData = $shopJson['data']['shops'][0] ?? null;
-
-        $shopId = $shopData['shop_id'] ?? null;
-        $shopName = $shopData['shop_name'] ?? null;
-
-        /*
-        |--------------------------------------
-        | SUCCESS RESULT
-        |--------------------------------------
-        */
-        dd([
-            'STEP' => 'SUCCESS',
-            'open_id' => $openId,
-            'shop_id' => $shopId,
-            'shop_name' => $shopName,
-            'access_token' => $accessToken,
-            'refresh_token' => $refreshToken,
-            'granted_scopes' => $data['granted_scopes'] ?? [],
-            'raw_shop' => $shopJson,
-        ]);
     }
-
+    /*
+    |--------------------------------------
+    | SIGNATURE GENERATOR (WAJIB)
+    |--------------------------------------
+    */
     private function makeSign($path, $params)
     {
         $appSecret = config('services.tiktok.app_secret');

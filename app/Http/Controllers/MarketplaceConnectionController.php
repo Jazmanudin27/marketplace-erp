@@ -102,7 +102,6 @@ class MarketplaceConnectionController extends Controller
                 ],
                 [
                     'shop_name' => $data['shop_name'] ?? $data['seller_name'] ?? null,
-                    'shop_cipher' => $shopCipher,
 
                     'access_token' => $data['access_token'],
 

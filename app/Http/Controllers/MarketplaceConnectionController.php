@@ -61,32 +61,36 @@ class MarketplaceConnectionController extends Controller
                 return redirect($this->getLazadaAuthUrl());
         }
     }
-public function callback(Request $request)
-{
-    $code = $request->code;
 
-    if (!$code) {
-        dd('NO CODE');
+    public function callback(Request $request)
+    {
+        $code = $request->code;
+
+        $token = $this->getAccessToken($code);
+
+        $accessToken = $token['data']['access_token'];
+
+        // simpan dulu
+        session(['tiktok_token' => $accessToken]);
+
+        return redirect('/test-tiktok-shops');
     }
 
-    $appKey = config('services.tiktok.app_key');
-    $appSecret = config('services.tiktok.app_secret');
+    public function getAccessToken($code)
+    {
+        $response = Http::get('https://auth.tiktok-shops.com/api/v2/token/get', [
+            'app_key' => config('services.tiktok.app_key'),
+            'app_secret' => config('services.tiktok.app_secret'),
+            'auth_code' => $code,
+            'grant_type' => 'authorized_code',
+        ]);
 
-    // 1. GET TOKEN
-    $tokenResponse = Http::get('https://auth.tiktok-shops.com/api/v2/token/get', [
-        'app_key' => $appKey,
-        'app_secret' => $appSecret,
-        'auth_code' => $code,
-        'grant_type' => 'authorized_code',
-    ]);
-
-    $tokenJson = $tokenResponse->json();
-
-    dd([
-        'TOKEN_RESPONSE' => $tokenJson
-    ]);
-}
-
+        dd([
+            'STATUS' => $response->status(),
+            'BODY' => $response->body(),
+            'JSON' => $response->json(),
+        ]);
+    }
     /*
     |--------------------------------------
     | SIGN GENERATOR (TIKTOK STYLE)

@@ -109,29 +109,13 @@ class MarketplaceConnectionController extends Controller
                     ->with('error', 'Access token TikTok tidak ditemukan');
             }
 
-            $baseUrl = rtrim(config('services.tiktok.host', 'https://open-api.tiktokglobalshop.com'), '/');
-            $path = '/api/shop/get_authorized_shop';
+            $shopCipher = $data['open_id'] ?? null;
+            $shopId = $data['shop_id'] ?? $shopCipher;
 
-            $params = [
-                'app_key' => config('services.tiktok.app_key'),
-                'timestamp' => (string) time(),
-                'access_token' => $accessToken,
-            ];
-
-            $params['sign'] = $this->makeSign($path, $params);
-
-            $shopResponse = Http::timeout(30)
-                ->withHeaders([
-                    'Access-Token' => $accessToken,
-                ])
-                ->get($baseUrl . $path, $params);
-
-            $shopJson = $shopResponse->json();
-
-            if (!is_array($shopJson)) {
+            if (!$companyId) {
                 return redirect()
                     ->route('marketplace.accounts')
-                    ->with('error', 'Response shop TikTok tidak valid');
+                    ->with('error', 'Company tidak ditemukan. Silakan login ulang lalu hubungkan kembali marketplace.');
             }
 
             dd([
@@ -139,31 +123,16 @@ class MarketplaceConnectionController extends Controller
                 'state_data' => $stateData,
                 'company_id' => $companyId,
                 'token_response' => $json,
-                'shop_response' => $shopJson,
-                'access_token' => $accessToken,
-                'refresh_token' => $refreshToken,
+                'computed_account' => [
+                    'platform' => 'tiktok',
+                    'shop_id' => $shopId,
+                    'shop_cipher' => $shopCipher,
+                    'shop_name' => $data['seller_name'] ?? 'TikTok Shop',
+                    'access_token' => $accessToken,
+                    'refresh_token' => $refreshToken,
+                    'expired_at' => $this->resolveAccessTokenExpiry($data) ?? now()->addSeconds((int) ($data['access_token_expire_in'] ?? 86400)),
+                ],
             ]);
-
-            if (($shopJson['code'] ?? -1) != 0) {
-                Log::error('TikTok shop fetch failed', [
-                    'response' => $shopJson,
-                    'params' => $params,
-                ]);
-
-                return redirect()
-                    ->route('marketplace.accounts')
-                    ->with('error', $shopJson['message'] ?? 'Gagal mengambil informasi shop TikTok');
-            }
-
-            $shopData = $shopJson['data']['shops'][0] ?? null;
-            $shopId = $shopData['shop_id'] ?? ($data['open_id'] ?? null);
-            $shopCipher = $data['open_id'] ?? null;
-
-            if (!$companyId) {
-                return redirect()
-                    ->route('marketplace.accounts')
-                    ->with('error', 'Company tidak ditemukan. Silakan login ulang lalu hubungkan kembali marketplace.');
-            }
 
             MarketplaceAccount::updateOrCreate(
                 [
@@ -175,7 +144,7 @@ class MarketplaceConnectionController extends Controller
                     'company_id' => $companyId,
                     'shop_id' => $shopId,
                     'shop_cipher' => $shopCipher,
-                    'shop_name' => $shopData['shop_name'] ?? $data['seller_name'] ?? 'TikTok Shop',
+                    'shop_name' => $data['seller_name'] ?? 'TikTok Shop',
                     'access_token' => $accessToken,
                     'refresh_token' => $refreshToken,
                     'expired_at' => $this->resolveAccessTokenExpiry($data) ?? now()->addSeconds((int) ($data['access_token_expire_in'] ?? 86400)),

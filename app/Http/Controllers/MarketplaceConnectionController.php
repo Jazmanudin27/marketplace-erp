@@ -64,16 +64,81 @@ class MarketplaceConnectionController extends Controller
 
     public function callback(Request $request)
     {
-        $code = $request->code;
+        try {
 
-        $token = $this->getAccessToken($code);
+            $code = $request->code;
 
-        $accessToken = $token['data']['access_token'];
+            if (!$code) {
+                return response()->json(['error' => 'code kosong']);
+            }
 
-        // simpan dulu
-        session(['tiktok_token' => $accessToken]);
+            // 1. GET TOKEN
+            $token = Http::get('https://auth.tiktok-shops.com/api/v2/token/get', [
+                'app_key' => config('services.tiktok.app_key'),
+                'app_secret' => config('services.tiktok.app_secret'),
+                'auth_code' => $code,
+                'grant_type' => 'authorized_code',
+            ])->json();
 
-        return redirect('/test-tiktok-shops');
+            // DEBUG AMAN
+            if (!isset($token['data']['access_token'])) {
+                return response()->json([
+                    'error' => 'TOKEN GAGAL',
+                    'response' => $token
+                ]);
+            }
+
+            $accessToken = $token['data']['access_token'];
+
+            // 2. SIGN
+            $appKey = config('services.tiktok.app_key');
+            $appSecret = config('services.tiktok.app_secret');
+            $timestamp = time();
+
+            $params = [
+                'app_key' => $appKey,
+                'timestamp' => $timestamp,
+            ];
+
+            $path = "/authorization/202309/shops";
+
+            $params = [
+                'app_key' => $appKey,
+                'timestamp' => $timestamp,
+            ];
+
+            ksort($params);
+
+            $baseString = $appSecret . $path;
+
+            foreach ($params as $k => $v) {
+                $baseString .= $k . $v;
+            }
+
+            $baseString .= $appSecret;
+
+            $sign = hash_hmac('sha256', $baseString, $appSecret);
+
+            // 3. CALL SHOPS
+            $shops = Http::withHeaders([
+                'x-tts-access-token' => $accessToken,
+            ])->get('https://open-api.tiktokglobalshop.com/authorization/202309/shops', [
+                        'app_key' => $appKey,
+                        'timestamp' => $timestamp,
+                        'sign' => $sign,
+                    ])->json();
+
+            return response()->json([
+                'token' => $token,
+                'shops' => $shops,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'SERVER ERROR',
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function getAccessToken($code)

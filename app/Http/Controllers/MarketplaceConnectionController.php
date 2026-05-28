@@ -7,6 +7,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -41,11 +42,12 @@ class MarketplaceConnectionController extends Controller
         ]);
 
         $platform = $validated['platform'];
+        $companyId = Auth::user()->company_id ?? session('company_id');
 
         // SIMPAN PLATFORM DI SESSION
         session([
             'oauth_platform' => $platform,
-            'oauth_company_id' => Auth::user()->company_id ?? session('company_id'),
+            'oauth_company_id' => $companyId,
         ]);
 
         switch ($platform) {
@@ -53,7 +55,7 @@ class MarketplaceConnectionController extends Controller
                 return redirect($this->getShopeeAuthUrl());
 
             case 'tiktok':
-                return redirect($this->getTiktokAuthUrl());
+                return redirect($this->getTiktokAuthUrl($companyId));
 
             case 'lazada':
                 return redirect($this->getLazadaAuthUrl());
@@ -66,6 +68,7 @@ class MarketplaceConnectionController extends Controller
             $user = Auth::user();
 
             $code = $request->code;
+            $stateData = $this->decodeOAuthState($request->state);
 
             if (!$code) {
                 return redirect()
@@ -97,6 +100,7 @@ class MarketplaceConnectionController extends Controller
             [$shopId, $shopCipher] = $this->extractShopIdentifiers($data);
             $expiredAt = $this->resolveAccessTokenExpiry($data);
             $companyId = $user?->company_id
+                ?? ($stateData['company_id'] ?? null)
                 ?? session('company_id')
                 ?? session('oauth_company_id');
 
@@ -234,18 +238,22 @@ class MarketplaceConnectionController extends Controller
             ]);
     }
 
-    protected function getTiktokAuthUrl()
+    protected function getTiktokAuthUrl(?int $companyId = null)
     {
         $app_key = config('services.tiktok.app_key');
-
-        $redirect_uri = config('services.tiktok.redirect_url');
+        $redirect_uri = route('callback.tiktok');
+        $state = Crypt::encryptString(json_encode([
+            'platform' => 'tiktok',
+            'company_id' => $companyId,
+            'timestamp' => now()->timestamp,
+        ]));
 
         return "https://auth.tiktok-shops.com/oauth/authorize?" . http_build_query([
             'app_key' => $app_key,
             'response_type' => 'code',
             'redirect_uri' => $redirect_uri,
             'scope' => 'shop.basic_info,order.read',
-            'state' => csrf_token(),
+            'state' => $state,
         ]);
     }
 
@@ -288,5 +296,24 @@ class MarketplaceConnectionController extends Controller
             'shop_name' => 'Shop Name',
             'expired_at' => now()->addDays(30),
         ];
+    }
+
+    protected function decodeOAuthState(?string $state): array
+    {
+        if (!$state) {
+            return [];
+        }
+
+        try {
+            $payload = json_decode(Crypt::decryptString($state), true);
+
+            return is_array($payload) ? $payload : [];
+        } catch (\Throwable $e) {
+            Log::warning('Unable to decode OAuth state', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
     }
 }

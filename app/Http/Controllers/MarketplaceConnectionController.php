@@ -62,49 +62,62 @@ class MarketplaceConnectionController extends Controller
         }
     }
 
-public function callback(Request $request)
-{
-    try {
+    public function callback(Request $request)
+    {
+        try {
 
-        $code = $request->code;
+            $code = $request->code;
 
-        if (!$code) {
-            dd('Code kosong');
+            if (!$code) {
+                dd('Code kosong');
+            }
+
+            $tokenResponse = Http::timeout(30)->get(
+                'https://auth.tiktok-shops.com/api/v2/token/get',
+                [
+                    'app_key' => config('services.tiktok.app_key'),
+                    'app_secret' => config('services.tiktok.app_secret'),
+                    'auth_code' => $code,
+                    'grant_type' => 'authorized_code',
+                ]
+            );
+
+            $json = $tokenResponse->json();
+
+            if (($json['code'] ?? -1) != 0) {
+                dd($json);
+            }
+
+            $data = $json['data'];
+
+            dd([
+                'seller_name' => $data['seller_name'] ?? null,
+                'access_token' => $data['access_token'] ?? null,
+                'refresh_token' => $data['refresh_token'] ?? null,
+            ]);
+
+            $accessToken = $data['access_token'];
+
+            $shopResponse = Http::withHeaders([
+                'x-tts-access-token' => $accessToken,
+            ])->get(
+                    'https://open-api.tiktokglobalshop.com/seller/202309/shops'
+                );
+
+            dd([
+                'shop_status' => $shopResponse->status(),
+                'shop_body' => $shopResponse->body(),
+                'shop_json' => $shopResponse->json(),
+            ]);
+        } catch (\Throwable $e) {
+
+            dd([
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
         }
-
-        $tokenResponse = Http::timeout(30)->get(
-            'https://auth.tiktok-shops.com/api/v2/token/get',
-            [
-                'app_key' => config('services.tiktok.app_key'),
-                'app_secret' => config('services.tiktok.app_secret'),
-                'auth_code' => $code,
-                'grant_type' => 'authorized_code',
-            ]
-        );
-
-        $json = $tokenResponse->json();
-
-        if (($json['code'] ?? -1) != 0) {
-            dd($json);
-        }
-
-        $data = $json['data'];
-
-        dd([
-            'seller_name' => $data['seller_name'] ?? null,
-            'access_token' => $data['access_token'] ?? null,
-            'refresh_token' => $data['refresh_token'] ?? null,
-        ]);
-
-    } catch (\Throwable $e) {
-
-        dd([
-            'message' => $e->getMessage(),
-            'line' => $e->getLine(),
-            'file' => $e->getFile(),
-        ]);
     }
-}
 
     protected function extractShopIdentifiers(array $data): array
     {

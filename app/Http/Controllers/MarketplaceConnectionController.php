@@ -65,103 +65,91 @@ class MarketplaceConnectionController extends Controller
 
     public function callback(Request $request)
     {
-        try {
+        $code = $request->code;
 
-            $code = $request->code;
-
-            if (!$code) {
-                dd(['step' => 'NO CODE', 'request' => $request->all()]);
-            }
-
-            /*
-            |----------------------
-            | TOKEN
-            |----------------------
-            */
-            $tokenResponse = Http::timeout(30)->get(
-                'https://auth.tiktok-shops.com/api/v2/token/get',
-                [
-                    'app_key' => config('services.tiktok.app_key'),
-                    'app_secret' => config('services.tiktok.app_secret'),
-                    'auth_code' => $code,
-                    'grant_type' => 'authorized_code',
-                ]
-            );
-
-            $json = $tokenResponse->json();
-
-            if (($json['code'] ?? -1) != 0) {
-                dd(['TOKEN ERROR' => $json]);
-            }
-
-            $data = $json['data'] ?? [];
-
-            $accessToken = $data['access_token'] ?? null;
-
-            if (!$accessToken) {
-                dd(['ACCESS TOKEN NULL' => $data]);
-            }
-
-            /*
-            |----------------------
-            | SHOP REQUEST
-            |----------------------
-            */
-            $path = "/api/shop/get_authorized_shop";
-
-            $params = [
-                'app_key' => config('services.tiktok.app_key'),
-                'timestamp' => time(),
-            ];
-
-            $params['sign'] = $this->makeSign($path, $params);
-
-            $shopResponse = Http::withHeaders([
-                'Access-Token' => $accessToken, // 👈 PAKAI INI (BUKAN x-tts)
-            ])->get(
-                    'https://open-api.tiktokglobalshop.com' . $path,
-                    $params
-                );
-
-
-            $shopJson = $shopResponse->json();
-
-            /*
-            |----------------------
-            | SAFE CHECK (INI PENTING)
-            |----------------------
-            */
-            if (!is_array($shopJson)) {
-                dd([
-                    'SHOP RESPONSE NOT ARRAY' => $shopResponse->body()
-                ]);
-            }
-
-            if (($shopJson['code'] ?? -1) != 0) {
-                dd(['SHOP ERROR' => $shopJson]);
-            }
-
-            $shopData = $shopJson['data']['shops'][0] ?? null;
-
-            $shopId = $shopData['shop_id'] ?? null;
-            $shopName = $shopData['shop_name'] ?? null;
-
+        if (!$code) {
             dd([
-                'SUCCESS',
-                'shop_id' => $shopId,
-                'shop_name' => $shopName,
-                'open_id' => $data['open_id'] ?? null,
-                'raw_shop' => $shopJson,
-            ]);
-
-        } catch (\Throwable $e) {
-            dd([
-                'EXCEPTION ERROR',
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
+                'step' => 'NO CODE',
+                'request' => $request->all()
             ]);
         }
+
+        /*
+        |--------------------------------------
+        | 1. GET ACCESS TOKEN
+        |--------------------------------------
+        */
+        $tokenResponse = Http::timeout(30)->get(
+            'https://auth.tiktok-shops.com/api/v2/token/get',
+            [
+                'app_key' => config('services.tiktok.app_key'),
+                'app_secret' => config('services.tiktok.app_secret'),
+                'auth_code' => $code,
+                'grant_type' => 'authorized_code',
+            ]
+        );
+
+        $json = $tokenResponse->json();
+
+        dd([
+            'STEP' => 'TOKEN RESPONSE RAW',
+            'HTTP_STATUS' => $tokenResponse->status(),
+            'BODY' => $tokenResponse->body(),
+            'JSON' => $json,
+        ]);
+
+        if (($json['code'] ?? -1) != 0) {
+            dd([
+                'STEP' => 'TOKEN ERROR',
+                'RESPONSE' => $json
+            ]);
+        }
+
+        $data = $json['data'] ?? [];
+
+        $accessToken = $data['access_token'] ?? null;
+        $openId = $data['open_id'] ?? null;
+
+        /*
+        |--------------------------------------
+        | DEBUG TOKEN RESULT
+        |--------------------------------------
+        */
+        dd([
+            'STEP' => 'TOKEN PARSED',
+            'access_token' => $accessToken,
+            'open_id' => $openId,
+            'full_data' => $data,
+        ]);
+
+        /*
+        |--------------------------------------
+        | 2. SHOP REQUEST (INI BELUM AKAN JALAN
+        | KARENA KITA DEBUG TOKEN DULU)
+        |--------------------------------------
+        */
+
+        $path = "/api/shop/get_authorized_shop";
+
+        $params = [
+            'app_key' => config('services.tiktok.app_key'),
+            'timestamp' => time(),
+            'access_token' => $accessToken,
+        ];
+
+        $params['sign'] = $this->makeSign($path, $params);
+
+        $shopResponse = Http::get(
+            'https://open-api.tiktokglobalshop.com' . $path,
+            $params
+        );
+
+        dd([
+            'STEP' => 'SHOP RESPONSE RAW',
+            'HTTP_STATUS' => $shopResponse->status(),
+            'BODY' => $shopResponse->body(),
+            'JSON' => $shopResponse->json(),
+        ]);
     }
     /*
     |--------------------------------------

@@ -120,7 +120,7 @@ class MarketplaceConnectionController extends Controller
         $shopResponse = Http::withHeaders([
             'x-tts-access-token' => $accessToken,
         ])->get(
-            'https://open-api-sg.tiktokglobalshop.com' . $path,
+            'https://open-api.tiktokglobalshop.com' . $path,
             $params
         );
 

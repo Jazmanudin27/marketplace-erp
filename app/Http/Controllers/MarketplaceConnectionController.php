@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\MarketplaceAccount;
+use Illuminate\Support\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class MarketplaceConnectionController extends Controller
 {
@@ -82,29 +84,28 @@ class MarketplaceConnectionController extends Controller
                     ->with('error', $response['message'] ?? 'Gagal koneksi TikTok');
             }
 
-            $data = $response['data'];
+            $data = $response['data'] ?? [];
 
-            $shopId = $data['shop_id'] ?? null;
-            $shopCipher = $data['shop_cipher'] ?? null;
+            [$shopId, $shopCipher] = $this->extractShopIdentifiers($data);
+            $expiredAt = $this->resolveAccessTokenExpiry($data);
 
-            if (!$shopId && isset($data['seller_id'])) {
-                $shopId = $data['seller_id'];
-            }
-
-            if (!$shopCipher && isset($data['seller_id']) && !ctype_digit((string) $data['seller_id'])) {
-                $shopCipher = $data['seller_id'];
+            if (!$shopId && !$shopCipher) {
+                return redirect()
+                    ->route('marketplace.accounts')
+                    ->with('error', 'Shop ID TikTok tidak ditemukan dari response OAuth');
             }
 
             MarketplaceAccount::updateOrCreate(
                 [
                     'platform' => 'tiktok',
-                    'shop_id' => $shopId,
+                    'shop_id' => $shopId ?? $shopCipher,
                 ],
                 [
+                    'shop_cipher' => $shopCipher,
                     'shop_name' => $data['shop_name'] ?? $data['seller_name'] ?? null,
-                    'access_token' => $data['access_token'],
-                    'refresh_token' => $data['refresh_token'],
-                    'expired_at' => now()->addSeconds($data['access_token_expire_in']),
+                    'access_token' => $data['access_token'] ?? null,
+                    'refresh_token' => $data['refresh_token'] ?? null,
+                    'expired_at' => $expiredAt,
                     'company_id' => Auth::user()->company_id ?? 1,
                 ]
             );
@@ -114,12 +115,75 @@ class MarketplaceConnectionController extends Controller
                 ->with('success', 'TikTok Shop berhasil terhubung');
 
         } catch (\Exception $e) {
-
-            dd([
+            Log::error('TikTok callback failed', [
                 'message' => $e->getMessage(),
                 'line' => $e->getLine(),
                 'file' => $e->getFile(),
+                'trace' => $e->getTraceAsString(),
             ]);
+
+            return redirect()
+                ->route('marketplace.accounts')
+                ->with('error', 'Terjadi kesalahan saat menghubungkan TikTok Shop: ' . $e->getMessage());
+        }
+    }
+
+    protected function extractShopIdentifiers(array $data): array
+    {
+        $shopId = $data['shop_id']
+            ?? $data['seller_id']
+            ?? data_get($data, 'shop.id')
+            ?? data_get($data, 'shop.shop_id')
+            ?? null;
+
+        $shopCipher = $data['shop_cipher']
+            ?? data_get($data, 'shop.shop_cipher')
+            ?? null;
+
+        if (!$shopId && $shopCipher) {
+            $shopId = $shopCipher;
+        }
+
+        if (!$shopCipher && is_string($shopId) && !ctype_digit($shopId)) {
+            $shopCipher = $shopId;
+        }
+
+        return [
+            $shopId ? (string) $shopId : null,
+            $shopCipher ? (string) $shopCipher : null,
+        ];
+    }
+
+    protected function resolveAccessTokenExpiry(array $data): ?\DateTimeInterface
+    {
+        $expiryValue = $data['access_token_expire_in']
+            ?? $data['access_token_expire_at']
+            ?? $data['expires_in']
+            ?? $data['expires_at']
+            ?? null;
+
+        if ($expiryValue === null || $expiryValue === '') {
+            return null;
+        }
+
+        if (is_numeric($expiryValue)) {
+            $raw = (int) $expiryValue;
+
+            if ($raw > 9999999999) {
+                $raw = (int) floor($raw / 1000);
+            }
+
+            if ($raw >= 946684800 && $raw <= 4102444800) {
+                return Carbon::createFromTimestamp($raw);
+            }
+
+            return now()->addSeconds($raw);
+        }
+
+        try {
+            return Carbon::parse($expiryValue);
+        } catch (\Throwable $e) {
+            return null;
         }
     }
 

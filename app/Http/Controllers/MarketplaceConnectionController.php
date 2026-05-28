@@ -62,17 +62,22 @@ class MarketplaceConnectionController extends Controller
         }
     }
 
-    public function callback(Request $request)
+  public function callback(Request $request)
 {
     $code = $request->code;
 
     if (!$code) {
         dd([
-            'error' => 'Authorization code tidak ditemukan',
+            'step' => 'NO CODE',
             'request' => $request->all()
         ]);
     }
 
+    /*
+    |--------------------------------------
+    | STEP 1: GET ACCESS TOKEN
+    |--------------------------------------
+    */
     $tokenResponse = Http::timeout(30)->get(
         'https://auth.tiktok-shops.com/api/v2/token/get',
         [
@@ -94,7 +99,9 @@ class MarketplaceConnectionController extends Controller
 
     $data = $json['data'] ?? [];
 
-    $accessToken = $data['access_token'] ?? null;
+    $accessToken  = $data['access_token'] ?? null;
+    $refreshToken = $data['refresh_token'] ?? null;
+    $openId       = $data['open_id'] ?? null;
 
     if (!$accessToken) {
         dd([
@@ -105,20 +112,47 @@ class MarketplaceConnectionController extends Controller
 
     /*
     |--------------------------------------
-    | DEBUG DATA (INI YANG KAMU CARI)
+    | STEP 2: GET SHOP INFO
     |--------------------------------------
     */
+    $shopResponse = Http::withHeaders([
+        'Access-Token' => $accessToken,
+    ])->get(
+        'https://open-api.tiktokglobalshop.com/api/v2/shop/get_authorized_shop',
+        [
+            'app_key' => config('services.tiktok.app_key'),
+            'timestamp' => time(),
+        ]
+    );
 
+    $shopJson = $shopResponse->json();
+
+    if (($shopJson['code'] ?? -1) != 0) {
+        dd([
+            'step' => 'SHOP ERROR',
+            'response' => $shopJson
+        ]);
+    }
+
+    $shopData = $shopJson['data']['shops'][0] ?? [];
+
+    $shopId   = $shopData['shop_id'] ?? null;
+    $shopName = $shopData['shop_name'] ?? null;
+
+    /*
+    |--------------------------------------
+    | FINAL DEBUG OUTPUT
+    |--------------------------------------
+    */
     dd([
-        'step' => 'OAUTH SUCCESS',
-        'open_id' => $data['open_id'] ?? null,
-        'seller_name' => $data['seller_name'] ?? null,
-        'seller_base_region' => $data['seller_base_region'] ?? null,
-        'user_type' => $data['user_type'] ?? null,
+        'step' => 'SUCCESS',
+        'open_id' => $openId,
+        'shop_id' => $shopId,
+        'shop_name' => $shopName,
         'access_token' => $accessToken,
-        'refresh_token' => $data['refresh_token'] ?? null,
-        'expire' => $data['access_token_expire_in'] ?? null,
-        'raw' => $data
+        'refresh_token' => $refreshToken,
+        'token_raw' => $data,
+        'shop_raw' => $shopJson,
     ]);
 }
     public function disconnect(MarketplaceAccount $account)

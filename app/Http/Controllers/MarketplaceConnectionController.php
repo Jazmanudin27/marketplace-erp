@@ -116,15 +116,14 @@ class MarketplaceConnectionController extends Controller
         $params = [
             'app_key' => config('services.tiktok.app_key'),
             'timestamp' => $timestamp,
-            'access_token' => $accessToken,
+            'access_token' => $accessToken, // WAJIB QUERY
         ];
 
         $params['sign'] = $this->makeSign($path, $params);
 
-        $shopResponse = Http::get(
-            'https://open-api.tiktokglobalshop.com' . $path,
-            $params
-        );
+        $shopResponse = Http::withHeaders([
+            'Access-Token' => $accessToken,
+        ])->get($baseUrl . $path, $params);
 
         $shopJson = $shopResponse->json();
 
@@ -170,6 +169,11 @@ class MarketplaceConnectionController extends Controller
         ]);
     }
 
+    /*
+    |--------------------------------------
+    | SIGN GENERATOR (TIKTOK STYLE)
+    |--------------------------------------
+    */
     private function makeSign($path, $params)
     {
         $appSecret = config('services.tiktok.app_secret');
@@ -178,14 +182,17 @@ class MarketplaceConnectionController extends Controller
 
         ksort($params);
 
-        // 🔥 WAJIB: build query string (bukan concat manual)
-        $queryString = http_build_query($params);
+        $baseString = $path;
 
-        // TikTok style string to sign
-        $stringToSign = $appSecret . $path . $queryString . $appSecret;
+        foreach ($params as $key => $value) {
+            $baseString .= $key . $value;
+        }
+
+        $stringToSign = $appSecret . $baseString . $appSecret;
 
         return hash_hmac('sha256', $stringToSign, $appSecret);
     }
+
     public function disconnect(MarketplaceAccount $account)
     {
         $this->authorize('delete', $account);

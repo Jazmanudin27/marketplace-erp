@@ -114,6 +114,7 @@ class MarketplaceConnectionController extends Controller
                 'shop_name' => $data['seller_name'] ?? 'TikTok Shop',
                 'access_token' => $data['access_token'] ?? null,
                 'refresh_token' => $data['refresh_token'] ?? null,
+                'expired_at' => $data['access_token_expire_in'],
             ]
         );
 

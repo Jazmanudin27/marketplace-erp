@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class MarketplaceConnectionController extends Controller
 {
@@ -16,7 +17,10 @@ class MarketplaceConnectionController extends Controller
 
     public function index()
     {
-        $company = Auth::user()->company;
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $companyId = session('company_id') ?? $user->company_id;
+        $company = $user->companies()->where('companies.id', $companyId)->first() ?? $user->company;
         $accounts = $company->marketplaceAccounts()->get();
 
         return view('marketplace.accounts', compact('accounts', 'company'));
@@ -39,7 +43,10 @@ class MarketplaceConnectionController extends Controller
         $platform = $validated['platform'];
 
         // SIMPAN PLATFORM DI SESSION
-        session(['oauth_platform' => $platform]);
+        session([
+            'oauth_platform' => $platform,
+            'oauth_company_id' => Auth::user()->company_id ?? session('company_id'),
+        ]);
 
         switch ($platform) {
             case 'shopee':
@@ -88,6 +95,9 @@ class MarketplaceConnectionController extends Controller
 
             [$shopId, $shopCipher] = $this->extractShopIdentifiers($data);
             $expiredAt = $this->resolveAccessTokenExpiry($data);
+            $companyId = Auth::user()->company_id
+                ?? session('company_id')
+                ?? session('oauth_company_id');
 
             if (!$shopId && !$shopCipher) {
                 return redirect()
@@ -95,19 +105,31 @@ class MarketplaceConnectionController extends Controller
                     ->with('error', 'Shop ID TikTok tidak ditemukan dari response OAuth');
             }
 
+            if (!$companyId) {
+                return redirect()
+                    ->route('marketplace.accounts')
+                    ->with('error', 'Company tidak ditemukan. Silakan login ulang lalu hubungkan kembali marketplace.');
+            }
+
+            $values = [
+                'shop_name' => $data['shop_name'] ?? $data['seller_name'] ?? null,
+                'access_token' => $data['access_token'] ?? null,
+                'refresh_token' => $data['refresh_token'] ?? null,
+                'expired_at' => $expiredAt,
+                'company_id' => $companyId,
+            ];
+
+            if (Schema::hasColumn('marketplace_accounts', 'shop_cipher')) {
+                $values['shop_cipher'] = $shopCipher;
+            }
+
             MarketplaceAccount::updateOrCreate(
                 [
                     'platform' => 'tiktok',
                     'shop_id' => $shopId ?? $shopCipher,
+                    'company_id' => $companyId,
                 ],
-                [
-                    'shop_cipher' => $shopCipher,
-                    'shop_name' => $data['shop_name'] ?? $data['seller_name'] ?? null,
-                    'access_token' => $data['access_token'] ?? null,
-                    'refresh_token' => $data['refresh_token'] ?? null,
-                    'expired_at' => $expiredAt,
-                    'company_id' => Auth::user()->company_id ?? 1,
-                ]
+                $values
             );
 
             return redirect()

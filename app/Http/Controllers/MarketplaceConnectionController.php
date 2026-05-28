@@ -75,7 +75,7 @@ class MarketplaceConnectionController extends Controller
             // 1. GET TOKEN
             // =========================
             $tokenResponse = Http::asForm()->post(
-                'https://auth.tiktok-shops.com/api/v2/token/get',
+                'https://auth.tiktokglobalshop.com/api/v2/token/get',
                 [
                     'app_key' => config('services.tiktok.app_key'),
                     'app_secret' => config('services.tiktok.app_secret'),

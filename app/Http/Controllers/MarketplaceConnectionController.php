@@ -65,24 +65,28 @@ class MarketplaceConnectionController extends Controller
 
     public function callback(Request $request)
 {
-    $shopId = $request->segment(4);
-    $state = $request->query('state');
+    $code = $request->query('code');
+    $stateRaw = $request->query('state');
 
-    $region = $request->query('region_check');
-    $shopRegion = $request->query('shop_region');
+    $state = json_decode($stateRaw, true);
 
-    // decode state (Laravel encrypted)
-    try {
-        $decodedState = Crypt::decryptString($state);
-    } catch (\Exception $e) {
-        $decodedState = null;
+    if (!$code) {
+        return response()->json(['error' => 'code missing']);
     }
 
+    // STEP 1: exchange token
+    $response = Http::get('https://auth.tiktok-shops.com/api/v2/token/get', [
+        'app_key' => config('services.tiktok.app_key'),
+        'app_secret' => config('services.tiktok.app_secret'),
+        'auth_code' => $code,
+        'grant_type' => 'authorized_code',
+    ]);
+
+    $data = $response->json();
+
     dd([
-        'shop_id' => $shopId,
-        'state' => $decodedState,
-        'query' => $request->query(),
-        'full_url' => $request->fullUrl(),
+        'state' => $state,
+        'token_response' => $data
     ]);
 }
 

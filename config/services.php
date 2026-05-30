@@ -61,7 +61,7 @@ return [
         'redirect_url' => env('TIKTOK_REDIRECT_URL'),
         'auth_base_url' => env('TIKTOK_AUTH_BASE_URL', 'https://services.tiktokshop.com/open/authorize'),
         'service_id' => env('TIKTOK_SERVICE_ID'),
-        'host' => env('TIKTOK_HOST', 'https://open-api.tiktokglobalshop.com'),
+        'host' => env('TIKTOK_HOST', 'https://open-api.tiktokshop.com'),
     ],
 
     'lazada' => [

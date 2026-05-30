@@ -72,7 +72,7 @@ class MarketplaceConnectionController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | GET ACCESS TOKEN
+            | 1. GET ACCESS TOKEN
             |--------------------------------------------------------------------------
             */
             $tokenResponse = Http::timeout(60)->get(
@@ -91,14 +91,60 @@ class MarketplaceConnectionController extends Controller
 
                 return redirect()
                     ->route('marketplace.accounts')
-                    ->with('error', 'Gagal mendapatkan token TikTok');
+                    ->with('error', $tokenJson['message'] ?? 'Gagal mendapatkan token TikTok');
             }
 
             $tokenData = $tokenJson['data'];
 
+            $accessToken = $tokenData['access_token'];
+
             /*
             |--------------------------------------------------------------------------
-            | SIMPAN / UPDATE ACCOUNT TIKTOK
+            | 2. GET SHOP INFO
+            |--------------------------------------------------------------------------
+            */
+            $path = '/seller/202309/shops';
+
+            $timestamp = time();
+
+            $params = [
+                'app_key' => config('services.tiktok.app_key'),
+                'timestamp' => $timestamp,
+            ];
+
+            $params['sign'] = $this->signTiktokRequest($path, $params);
+
+            $shopResponse = Http::timeout(60)
+                ->withHeaders([
+                    'x-tts-access-token' => $accessToken,
+                    'Content-Type' => 'application/json',
+                ])
+                ->get(
+                    'https://open-api.tiktokglobalshop.com' . $path,
+                    $params
+                );
+
+            $shopJson = $shopResponse->json();
+
+            if (($shopJson['code'] ?? -1) != 0) {
+
+                return redirect()
+                    ->route('marketplace.accounts')
+                    ->with('error', $shopJson['message'] ?? 'Gagal mendapatkan shop TikTok');
+            }
+
+            $shopId = data_get($shopJson, 'data.shops.0.id');
+
+            if (!$shopId) {
+
+                return redirect()
+                    ->route('marketplace.accounts')
+                    ->with('error', 'Shop ID TikTok tidak ditemukan');
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | 3. SIMPAN ACCOUNT
             |--------------------------------------------------------------------------
             */
             MarketplaceAccount::updateOrCreate(
@@ -107,16 +153,13 @@ class MarketplaceConnectionController extends Controller
                     'platform' => 'tiktok',
                 ],
                 [
-                    // sementara pakai open_id
-                    'shop_id' => $tokenData['open_id'] ?? null,
+                    'shop_id' => $shopId,
                     'shop_name' => $tokenData['seller_name'] ?? 'TikTok Shop',
-                    'access_token' => $tokenData['access_token'] ?? null,
-                    'refresh_token' => $tokenData['refresh_token'] ?? null,
-                    'expired_at' => isset($tokenData['access_token_expire_in'])
-                        ? Carbon::createFromTimestamp(
-                            $tokenData['access_token_expire_in']
-                        )
-                        : now()->addDays(30),
+                    'access_token' => $tokenData['access_token'],
+                    'refresh_token' => $tokenData['refresh_token'],
+                    'expired_at' => Carbon::createFromTimestamp(
+                        $tokenData['access_token_expire_in']
+                    ),
                 ]
             );
 

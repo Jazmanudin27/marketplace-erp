@@ -50,81 +50,91 @@ class MarketplaceConnectionController extends Controller
                 return redirect($this->getLazadaAuthUrl());
         }
     }
+    public function callback(Request $request)
+    {
+        try {
 
-public function callback(Request $request)
-{
-    try {
+            $code = $request->query('code');
 
-        $code = $request->query('code');
+            if (!$code || $code === 'null') {
+                return redirect()
+                    ->route('marketplace.accounts')
+                    ->with('error', 'Authorization code tidak ditemukan');
+            }
 
-        if (!$code || $code === 'null') {
-            return response()->json([
-                'error' => 'Authorization code tidak ditemukan'
-            ]);
+            $company = Auth::user()?->company;
+
+            if (!$company) {
+                return redirect()
+                    ->route('marketplace.accounts')
+                    ->with('error', 'Company tidak ditemukan');
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | GET ACCESS TOKEN
+            |--------------------------------------------------------------------------
+            */
+            $tokenResponse = Http::timeout(60)->get(
+                'https://auth.tiktok-shops.com/api/v2/token/get',
+                [
+                    'app_key' => config('services.tiktok.app_key'),
+                    'app_secret' => config('services.tiktok.app_secret'),
+                    'auth_code' => $code,
+                    'grant_type' => 'authorized_code',
+                ]
+            );
+
+            $tokenJson = $tokenResponse->json();
+
+            if (($tokenJson['code'] ?? -1) != 0) {
+
+                return redirect()
+                    ->route('marketplace.accounts')
+                    ->with('error', 'Gagal mendapatkan token TikTok');
+            }
+
+            $tokenData = $tokenJson['data'];
+
+            /*
+            |--------------------------------------------------------------------------
+            | SIMPAN / UPDATE ACCOUNT TIKTOK
+            |--------------------------------------------------------------------------
+            */
+            MarketplaceAccount::updateOrCreate(
+                [
+                    'company_id' => $company->id,
+                    'platform' => 'tiktok',
+                ],
+                [
+                    // sementara pakai open_id
+                    'shop_id' => $tokenData['open_id'] ?? null,
+
+                    'shop_name' => $tokenData['seller_name'] ?? 'TikTok Shop',
+
+                    'access_token' => $tokenData['access_token'] ?? null,
+
+                    'refresh_token' => $tokenData['refresh_token'] ?? null,
+
+                    'expired_at' => isset($tokenData['access_token_expire_in'])
+                        ? Carbon::createFromTimestamp(
+                            $tokenData['access_token_expire_in']
+                        )
+                        : now()->addDays(30),
+                ]
+            );
+
+            return redirect()
+                ->route('marketplace.accounts')
+                ->with('success', 'TikTok Shop berhasil terhubung.');
+
+        } catch (\Throwable $e) {
+
+            return redirect()
+                ->route('marketplace.accounts')
+                ->with('error', $e->getMessage());
         }
-
-        $company = Auth::user()?->company;
-
-        if (!$company) {
-            return response()->json([
-                'error' => 'Company tidak ditemukan'
-            ]);
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | GET ACCESS TOKEN
-        |--------------------------------------------------------------------------
-        */
-        $tokenResponse = Http::timeout(60)->get(
-            'https://auth.tiktok-shops.com/api/v2/token/get',
-            [
-                'app_key'     => config('services.tiktok.app_key'),
-                'app_secret'  => config('services.tiktok.app_secret'),
-                'auth_code'   => $code,
-                'grant_type'  => 'authorized_code',
-            ]
-        );
-
-        $tokenJson = $tokenResponse->json();
-
-        if (($tokenJson['code'] ?? -1) != 0) {
-            return response()->json([
-                'step' => 'GET TOKEN FAILED',
-                'response' => $tokenJson,
-            ]);
-        }
-
-        $tokenData = $tokenJson['data'];
-
-        /*
-        |--------------------------------------------------------------------------
-        | DEBUG DATA TIKTOK
-        |--------------------------------------------------------------------------
-        */
-        return response()->json([
-            'success' => true,
-
-            'open_id' => $tokenData['open_id'] ?? null,
-            'seller_name' => $tokenData['seller_name'] ?? null,
-            'seller_base_region' => $tokenData['seller_base_region'] ?? null,
-
-            'access_token' => $tokenData['access_token'] ?? null,
-
-            'granted_scopes' => $tokenData['granted_scopes'] ?? [],
-
-            'full_response' => $tokenJson,
-        ]);
-
-    } catch (\Throwable $e) {
-
-        return response()->json([
-            'message' => $e->getMessage(),
-            'line' => $e->getLine(),
-            'file' => $e->getFile(),
-        ], 500);
     }
-}
 
     public function disconnect(MarketplaceAccount $account)
     {

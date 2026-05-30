@@ -45,7 +45,7 @@ class TikTokService implements MarketplaceInterface
 {
     $this->ensureValidToken($account);
 
-    $path = '/product/202309/products/search';
+    $path = '/product/202502/products/search';
 
     $params = [
         'app_key' => $this->appId,

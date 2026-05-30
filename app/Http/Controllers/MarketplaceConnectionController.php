@@ -260,6 +260,6 @@ class MarketplaceConnectionController extends Controller
 
         $baseString .= $appSecret;
 
-        return hash('sha256', $baseString);
+        return hash_hmac('sha256', $baseString, $appSecret);
     }
 }

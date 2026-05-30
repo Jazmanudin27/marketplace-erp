@@ -48,14 +48,13 @@ class TikTokService implements MarketplaceInterface
         $path = '/product/202309/products/search';
 
         $params = [
-            'app_key' => $this->appId,
+            'app_key'   => $this->appId,
             'timestamp' => time(),
-            'shop_id' => $account->shop_id,
-        ];
-
-        $body = [
+            'shop_id'   => $account->shop_id,
             'page_size' => 100,
         ];
+
+        $body = [];
 
         $params['sign'] = $this->sign(
             $path,
@@ -67,13 +66,13 @@ class TikTokService implements MarketplaceInterface
 
         $response = Http::withHeaders([
             'x-tts-access-token' => $account->access_token,
-            'Content-Type' => 'application/json',
-        ])->post($url, $body);
+            'Content-Type'       => 'application/json',
+        ])->post($url, []);
 
         dd([
-            'url' => $url,
-            'body' => $body,
+            'url'      => $url,
             'response' => $response->json(),
+            'status'   => $response->status(),
         ]);
     }
 

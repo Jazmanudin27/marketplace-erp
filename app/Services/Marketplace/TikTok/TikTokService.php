@@ -47,37 +47,21 @@ class TikTokService implements MarketplaceInterface
 
         $path = '/product/202309/products/search';
 
-        // BODY REQUEST
         $body = [
             'page_size' => 100,
         ];
 
-        // QUERY PARAMS
         $queries = [
             'app_key' => $this->appId,
             'timestamp' => time(),
             'shop_id' => $account->shop_id,
         ];
 
-        // SIGN
-        $queries['sign'] = $this->sign(
-            $path,
-            $queries,
-            $body
-        );
+        $queries['sign'] = $this->sign($path, $queries, $body);
 
         $url = $this->host . $path . '?' . http_build_query($queries);
 
-        $response = Http::withHeaders([
-            'x-tts-access-token' => $account->access_token,
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
-        ])
-            ->withBody(
-                json_encode($body),
-                'application/json'
-            )
-            ->post($url);
+        $response = Http::asForm()->post($url, $body);
 
         dd([
             'url' => $url,

@@ -41,6 +41,48 @@ class TikTokService implements MarketplaceInterface
         }
     }
 
+    public function getProducts($account)
+    {
+        $this->ensureValidToken($account);
+
+        $path = '/product/202309/products/search';
+
+        $body = [
+            'page_size' => 100,
+        ];
+
+        $params = [
+            'app_key' => $this->appId,
+            'timestamp' => time(),
+            'shop_id' => $account->shop_id,
+        ];
+
+        $params['sign'] = $this->sign(
+            $path,
+            $params,
+            $body
+        );
+
+        $response = Http::withHeaders([
+            'x-tts-access-token' => $account->access_token,
+            'Content-Type' => 'application/json',
+        ])->post(
+                $this->host . $path . '?' . http_build_query($params),
+                $body
+            );
+
+        dd([
+            'url' => $this->host . $path,
+            'params' => $params,
+            'body' => $body,
+            'response' => $response->json(),
+            'host' => $this->host,
+            'app_key' => $this->appId,
+            'shop_id' => $account->shop_id,
+            'urls' => $this->host . $path . '?' . http_build_query($params),
+        ]);
+    }
+
     public function sign(string $path, array $queries, array $body = [])
     {
         unset($queries['sign']);
@@ -48,10 +90,13 @@ class TikTokService implements MarketplaceInterface
 
         ksort($queries);
 
-        $signString = $this->appSecret;
-        $signString .= $path;
+        $signString = $this->appSecret . $path;
 
         foreach ($queries as $key => $value) {
+            if (is_array($value) || is_object($value)) {
+                continue;
+            }
+
             $signString .= $key . $value;
         }
 
@@ -70,38 +115,6 @@ class TikTokService implements MarketplaceInterface
             $signString,
             $this->appSecret
         );
-    }
-
-    /**
-     * =========================
-     * GET PRODUCTS (SEARCH)
-     * =========================
-     */
-    public function getProducts($account)
-    {
-        $this->ensureValidToken($account);
-
-        $path = '/product/202309/products/search';
-
-        $params = [
-            'app_key' => $this->appId,
-            'timestamp' => time(),
-            'shop_id' => $account->shop_id,
-        ];
-
-        $params['sign'] = $this->sign($path, $params);
-
-        $response = Http::withHeaders([
-            'x-tts-access-token' => $account->access_token,
-            'Content-Type' => 'application/json',
-        ])->post(
-                $this->host . $path . '?' . http_build_query($params),
-                [
-                    'page_size' => 100,
-                ]
-            );
-
-        dd($response->json());
     }
 
     protected function validateResponse($response): array

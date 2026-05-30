@@ -71,10 +71,10 @@ class TikTokService implements MarketplaceInterface
     ])
     ->asJson()
     ->post($url, $body);
-
     dd([
         'url'      => $url,
         'params'   => $params,
+        'access_token'   => $account->access_token,
         'body'     => $body,
         'status'   => $response->status(),
         'response' => $response->json(),

@@ -42,70 +42,90 @@ class TikTokService implements MarketplaceInterface
     }
 
     public function getProducts($account)
-{
-    $this->ensureValidToken($account);
+    {
+        $this->ensureValidToken($account);
 
-    $path = '/product/202309/products/search';
+        $path = '/product/202309/products/search';
 
-    $body = [
-        'page_size' => 100,
-    ];
+        $body = [
+            'page_size' => 100,
+        ];
 
-    $queries = [
-        'app_key'   => $this->appId,
-        'timestamp' => time(),
-        'shop_id'   => $account->shop_id,
-    ];
+        $queries = [
+            'app_key' => $this->appId,
+            'timestamp' => time(),
+            'shop_id' => $account->shop_id,
+        ];
 
-    $queries['sign'] = $this->sign(
-        $path,
-        $queries,
-        $body
-    );
+        $queries['sign'] = $this->sign(
+            $path,
+            $queries,
+            $body
+        );
 
-    $url = $this->host . $path . '?' . http_build_query($queries);
+        $url = $this->host . $path . '?' . http_build_query($queries);
 
-    $response = Http::withHeaders([
-        'x-tts-access-token' => $account->access_token,
-        'Content-Type'       => 'application/json',
-    ])->post(
-        $url,
-        $body
-    );
+        $response = Http::withHeaders([
+            'x-tts-access-token' => $account->access_token,
+            'content-type' => 'application/json',
+        ])->post($url, $body);
 
-    dd([
-        'url' => $url,
-        'body' => $body,
-        'status' => $response->status(),
-        'response' => $response->json(),
-    ]);
-}
-
-    private function sign(string $path, array $queries = [], array $body = []): string
-{
-    unset($queries['sign']);
-    unset($queries['access_token']);
-
-    ksort($queries);
-
-    $stringToSign = $this->appSecret . $path;
-
-    foreach ($queries as $key => $value) {
-        $stringToSign .= $key . $value;
+        dd([
+            'sign_string' => $this->buildSignString(
+                $path,
+                $queries,
+                $body
+            ),
+            'url' => $url,
+            'response' => $response->body(),
+            'json' => $response->json(),
+        ]);
     }
 
-    if (!empty($body)) {
-        $stringToSign .= json_encode(
-            $body,
-            JSON_UNESCAPED_UNICODE |
-            JSON_UNESCAPED_SLASHES
+    private function buildSignString(
+        string $path,
+        array $queries,
+        array $body = []
+    ): string {
+        unset($queries['sign']);
+        unset($queries['access_token']);
+
+        ksort($queries);
+
+        $input = $path;
+
+        foreach ($queries as $k => $v) {
+            $input .= $k . $v;
+        }
+
+        if (!empty($body)) {
+            $input .= json_encode(
+                $body,
+                JSON_UNESCAPED_UNICODE |
+                JSON_UNESCAPED_SLASHES
+            );
+        }
+
+        return $this->appSecret . $input . $this->appSecret;
+    }
+
+    private function sign(
+        string $path,
+        array $queries,
+        array $body = []
+    ): string {
+        $input = $this->buildSignString(
+            $path,
+            $queries,
+            $body
+        );
+
+        return hash_hmac(
+            'sha256',
+            $input,
+            $this->appSecret
         );
     }
-
-    $stringToSign .= $this->appSecret;
-
-    return hash('sha256', $stringToSign);
-}
 
     protected function validateResponse($response): array
     {

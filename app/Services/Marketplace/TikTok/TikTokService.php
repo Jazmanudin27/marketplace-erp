@@ -50,16 +50,17 @@ class TikTokService implements MarketplaceInterface
         $baseString = $this->appSecret . $path;
 
         foreach ($params as $key => $value) {
+
+            if (is_array($value)) {
+                continue;
+            }
+
             $baseString .= $key . $value;
         }
 
         $baseString .= $this->appSecret;
 
-        return hash_hmac(
-            'sha256',
-            $baseString,
-            $this->appSecret
-        );
+        return hash('sha256', $baseString);
     }
 
     /**

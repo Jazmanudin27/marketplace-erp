@@ -75,10 +75,6 @@ class TikTokService implements MarketplaceInterface
 
         $shopCipher = $account->shop_cipher ?: $account->shop_id;
 
-        if (!$shopCipher) {
-            throw new \Exception('shop_cipher kosong');
-        }
-
         $params = [
             'app_key' => $this->appId,
             'timestamp' => (string) time(),
@@ -90,7 +86,12 @@ class TikTokService implements MarketplaceInterface
 
         $params['sign'] = $this->sign($path, $params);
 
-        return Http::post($this->host . $path, $params)->json();
+        dd([
+            'url' => $this->host . $path,
+            'params' => $params,
+            'shop_id' => $account->shop_id,
+            'token_prefix' => substr($account->access_token, 0, 20),
+        ]);
     }
 
     protected function validateResponse($response): array

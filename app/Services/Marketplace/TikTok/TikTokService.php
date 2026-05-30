@@ -41,26 +41,35 @@ class TikTokService implements MarketplaceInterface
         }
     }
 
-    public function sign(string $path, array $params): string
+    public function sign(string $path, array $queries, array $body = [])
     {
-        unset($params['sign']);
+        unset($queries['sign']);
+        unset($queries['access_token']);
 
-        ksort($params);
+        ksort($queries);
 
-        $baseString = $this->appSecret . $path;
+        $signString = $this->appSecret;
+        $signString .= $path;
 
-        foreach ($params as $key => $value) {
-
-            if (is_array($value)) {
-                continue;
-            }
-
-            $baseString .= $key . $value;
+        foreach ($queries as $key => $value) {
+            $signString .= $key . $value;
         }
 
-        $baseString .= $this->appSecret;
+        if (!empty($body)) {
+            $signString .= json_encode(
+                $body,
+                JSON_UNESCAPED_UNICODE |
+                JSON_UNESCAPED_SLASHES
+            );
+        }
 
-        return hash('sha256', $baseString);
+        $signString .= $this->appSecret;
+
+        return hash_hmac(
+            'sha256',
+            $signString,
+            $this->appSecret
+        );
     }
 
     /**

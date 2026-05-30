@@ -31,11 +31,15 @@ class MarketplaceSyncController extends Controller
             'https://open-api.tiktokglobalshop.com' . $path,
             $params
         );
+dd([
+    'path' => $path,
+    'params' => $params,
+    'sign' => $params['sign'],
 
-        dd([
             'status' => $response->status(),
             'body' => $response->json(),
-        ]);
+]);
+
     }
     public function syncProductss($id)
     {

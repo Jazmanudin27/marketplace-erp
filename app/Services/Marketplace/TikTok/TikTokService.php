@@ -47,19 +47,19 @@ class TikTokService implements MarketplaceInterface
 
         ksort($params);
 
-        $string = $this->appSecret . $path;
+        $baseString = $this->appSecret . $path;
 
-        foreach ($params as $k => $v) {
-            // IMPORTANT: array/object must be string
-            if (is_array($v) || is_object($v)) {
-                $v = json_encode($v);
-            }
-            $string .= $k . $v;
+        foreach ($params as $key => $value) {
+            $baseString .= $key . $value;
         }
 
-        $string .= $this->appSecret;
+        $baseString .= $this->appSecret;
 
-        return hash('sha256', $string);
+        return hash_hmac(
+            'sha256',
+            $baseString,
+            $this->appSecret
+        );
     }
 
     /**
@@ -95,9 +95,9 @@ class TikTokService implements MarketplaceInterface
             'x-tts-access-token' => $account->access_token,
             'Content-Type' => 'application/json',
         ])->post(
-            $this->host . $path,
-            $params
-        );
+                $this->host . $path,
+                $params
+            );
 
         return $response->json();
     }

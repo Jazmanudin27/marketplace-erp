@@ -37,7 +37,9 @@ Route::middleware(['auth', \App\Http\Middleware\CompanyMiddleware::class])->grou
         Route::get('/accounts', [MarketplaceConnectionController::class, 'index'])->name('accounts');
         Route::get('/accounts/{account}', [MarketplaceConnectionController::class, 'show'])->name('show');
         Route::post('/connect', [MarketplaceConnectionController::class, 'connect'])->name('connect');
-        Route::get('/callback', [MarketplaceConnectionController::class, 'callback'])->name('callback');
+        Route::get('/callback', [MarketplaceConnectionController::class, 'callback'])
+            ->name('callback')
+            ->withoutMiddleware(['auth', \App\Http\Middleware\CompanyMiddleware::class]);
         Route::delete('/accounts/{account}', [MarketplaceConnectionController::class, 'disconnect'])->name('disconnect');
     });
 });

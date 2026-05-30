@@ -148,7 +148,26 @@ class MarketplaceConnectionController extends Controller
             | 3. SIMPAN ACCOUNT
             |--------------------------------------------------------------------------
             */
-            dd($shopJson);
+            MarketplaceAccount::updateOrCreate(
+                [
+                    'company_id' => $company->id,
+                    'platform' => 'tiktok',
+                ],
+                [
+                    'shop_id' => $shopId,
+                    'shop_cipher' => $shopCipher ?? '',
+                    'shop_name' => $tokenData['seller_name'] ?? 'TikTok Shop',
+                    'access_token' => $tokenData['access_token'],
+                    'refresh_token' => $tokenData['refresh_token'],
+                    'expired_at' => Carbon::createFromTimestamp(
+                        $tokenData['access_token_expire_in']
+                    ),
+                ]
+            );
+
+            return redirect()
+                ->route('marketplace.accounts')
+                ->with('success', 'TikTok Shop berhasil terhubung.');
 
         } catch (\Throwable $e) {
 
@@ -184,30 +203,16 @@ class MarketplaceConnectionController extends Controller
 
     protected function getTiktokAuthUrl()
     {
-        $serviceId = config('services.tiktok.service_id');
-
-        if ($serviceId) {
-            $baseUrl = rtrim(
-                config('services.tiktok.auth_base_url', 'https://services.tiktokshop.com/open/authorize'),
-                '/'
-            );
-
-            return $baseUrl . '?' . http_build_query([
-                'service_id' => $serviceId,
+        return rtrim(
+            config(
+                'services.tiktok.auth_base_url',
+                'https://services.tiktokshop.com/open/authorize'
+            ),
+            '/'
+        ) . '?' . http_build_query([
+                'service_id' => config('services.tiktok.service_id'),
                 'state' => csrf_token(),
             ]);
-        }
-
-        $appKey = config('services.tiktok.app_key');
-        $redirectUri = config('services.tiktok.redirect_url');
-
-        return 'https://auth.tiktok-shops.com/oauth/authorize?' . http_build_query([
-            'app_key' => $appKey,
-            'response_type' => 'code',
-            'redirect_uri' => $redirectUri,
-            'scope' => 'shop.basic_info,order.read',
-            'state' => csrf_token(),
-        ]);
     }
 
 

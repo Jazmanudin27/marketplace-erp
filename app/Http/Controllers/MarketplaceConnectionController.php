@@ -51,25 +51,29 @@ class MarketplaceConnectionController extends Controller
         }
     }
 
-   public function callback(Request $request)
+ public function callback(Request $request)
 {
     try {
 
         $code = $request->query('code');
 
         if (!$code || $code === 'null') {
-            dd('Authorization code tidak ditemukan');
+            return response()->json([
+                'error' => 'Authorization code tidak ditemukan'
+            ]);
         }
 
         $company = Auth::user()?->company;
 
         if (!$company) {
-            dd('Company tidak ditemukan');
+            return response()->json([
+                'error' => 'Company tidak ditemukan'
+            ]);
         }
 
         /*
         |--------------------------------------------------------------------------
-        | 1. GET TOKEN
+        | GET ACCESS TOKEN
         |--------------------------------------------------------------------------
         */
         $tokenResponse = Http::timeout(60)->get(
@@ -85,7 +89,7 @@ class MarketplaceConnectionController extends Controller
         $tokenJson = $tokenResponse->json();
 
         if (($tokenJson['code'] ?? -1) != 0) {
-            dd([
+            return response()->json([
                 'step' => 'GET TOKEN FAILED',
                 'response' => $tokenJson,
             ]);
@@ -97,28 +101,23 @@ class MarketplaceConnectionController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | 2. GET AUTHORIZED SHOPS
+        | GET AUTHORIZED SHOPS
         |--------------------------------------------------------------------------
         */
-        $timestamp = time();
-
-        $appKey    = config('services.tiktok.app_key');
+        $appKey = config('services.tiktok.app_key');
         $appSecret = config('services.tiktok.app_secret');
+
+        $timestamp = time();
 
         $path = '/authorization/202309/shops';
 
         /*
         |--------------------------------------------------------------------------
-        | SIGN (DEBUG)
+        | TODO:
+        | GANTI DENGAN RUMUS SIGN RESMI TIKTOK
         |--------------------------------------------------------------------------
         */
-        $signString = $appKey . $path . $timestamp;
-
-        $sign = hash_hmac(
-            'sha256',
-            $signString,
-            $appSecret
-        );
+        $sign = 'GENERATE_SIGN_HERE';
 
         $shopResponse = Http::timeout(60)
             ->withHeaders([
@@ -136,18 +135,18 @@ class MarketplaceConnectionController extends Controller
 
         $shopJson = $shopResponse->json();
 
-        dd([
+        return response()->json([
             'oauth_response' => $tokenJson,
             'shops_response' => $shopJson,
         ]);
 
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
 
-        dd([
+        return response()->json([
             'message' => $e->getMessage(),
-            'line'    => $e->getLine(),
-            'file'    => $e->getFile(),
-        ]);
+            'line' => $e->getLine(),
+            'file' => $e->getFile(),
+        ], 500);
     }
 }
 

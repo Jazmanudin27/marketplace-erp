@@ -47,14 +47,17 @@ class TikTokService implements MarketplaceInterface
 
     $path = '/product/202309/products/search';
 
-    $body = [
-        'pageSize' => 100,
+    $params = [
+        'app_key' => $this->appId,
+        'timestamp' => time(),
+        'shop_id' => $account->shop_id,
+
+        'page_size' => 100,
+        'page_token' => '',
     ];
 
-    $params = [
-        'app_key'   => $this->appId,
-        'timestamp' => time(),
-        'shop_id'   => $account->shop_id,
+    $body = [
+        'status' => 'ALL',
     ];
 
     $params['sign'] = $this->sign(
@@ -66,22 +69,11 @@ class TikTokService implements MarketplaceInterface
     $url = $this->host . $path . '?' . http_build_query($params);
 
     $response = Http::withHeaders([
-    'x-tts-access-token' => $account->access_token,
-    'Content-Type' => 'application/json',
-])
-->withBody(
-    json_encode($body),
-    'application/json'
-)
-->post($url);
-    dd([
-        'url'      => $url,
-        'params'   => $params,
-        'access_token'   => $account->access_token,
-        'body'     => $body,
-        'status'   => $response->status(),
-        'response' => $response->json(),
-    ]);
+        'x-tts-access-token' => $account->access_token,
+        'Content-Type' => 'application/json',
+    ])->post($url, $body);
+
+    dd($response->json());
 }
 
     public function sign(string $path, array $queries, array $body = [])

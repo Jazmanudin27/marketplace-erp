@@ -51,7 +51,7 @@ class MarketplaceConnectionController extends Controller
         }
     }
 
- public function callback(Request $request)
+public function callback(Request $request)
 {
     try {
 
@@ -97,45 +97,23 @@ class MarketplaceConnectionController extends Controller
 
         $tokenData = $tokenJson['data'];
 
-        $accessToken = $tokenData['access_token'];
-
         /*
         |--------------------------------------------------------------------------
-        | GET AUTHORIZED SHOPS
+        | DEBUG DATA TIKTOK
         |--------------------------------------------------------------------------
         */
-        $appKey = config('services.tiktok.app_key');
-        $appSecret = config('services.tiktok.app_secret');
-
-        $timestamp = time();
-
-        $path = '/authorization/202309/shops';
-        $sign = $this->signTiktokRequest($path, [
-            'app_key' => $appKey,
-            'timestamp' => $timestamp,
-        ]);
-
-        $host = rtrim(config('services.tiktok.host', 'https://open-api.tiktokglobalshop.com'), '/');
-
-        $shopResponse = Http::timeout(60)
-            ->withHeaders([
-                'Content-Type' => 'application/json',
-                'x-tts-access-token' => $accessToken,
-            ])
-            ->get(
-                $host . $path,
-                [
-                    'app_key' => $appKey,
-                    'timestamp' => $timestamp,
-                    'sign' => $sign,
-                ]
-            );
-
-        $shopJson = $shopResponse->json();
-
         return response()->json([
-            'oauth_response' => $tokenJson,
-            'shops_response' => $shopJson,
+            'success' => true,
+
+            'open_id' => $tokenData['open_id'] ?? null,
+            'seller_name' => $tokenData['seller_name'] ?? null,
+            'seller_base_region' => $tokenData['seller_base_region'] ?? null,
+
+            'access_token' => $tokenData['access_token'] ?? null,
+
+            'granted_scopes' => $tokenData['granted_scopes'] ?? [],
+
+            'full_response' => $tokenJson,
         ]);
 
     } catch (\Throwable $e) {

@@ -41,47 +41,45 @@ class TikTokService implements MarketplaceInterface
         }
     }
 
-    public function getProducts($account)
-    {
-        $this->ensureValidToken($account);
+   public function getProducts($account)
+{
+    $this->ensureValidToken($account);
 
-        $path = '/product/202309/products/search';
+    $path = '/product/202309/products/search';
 
-        $body = [
-            'page_size' => 100,
-        ];
+    $body = [
+        'pageSize' => 100,
+    ];
 
-        $params = [
-            'app_key' => $this->appId,
-            'timestamp' => time(),
-            'shop_id' => $account->shop_id,
-        ];
+    $params = [
+        'app_key'   => $this->appId,
+        'timestamp' => time(),
+        'shop_id'   => $account->shop_id,
+    ];
 
-        $params['sign'] = $this->sign(
-            $path,
-            $params,
-            $body
-        );
+    $params['sign'] = $this->sign(
+        $path,
+        $params,
+        $body
+    );
 
-        $response = Http::withHeaders([
-            'x-tts-access-token' => $account->access_token,
-            'Content-Type' => 'application/json',
-        ])->post(
-                $this->host . $path . '?' . http_build_query($params),
-                $body
-            );
+    $url = $this->host . $path . '?' . http_build_query($params);
 
-        dd([
-            'url' => $this->host . $path,
-            'params' => $params,
-            'body' => $body,
-            'response' => $response->json(),
-            'host' => $this->host,
-            'app_key' => $this->appId,
-            'shop_id' => $account->shop_id,
-            'urls' => $this->host . $path . '?' . http_build_query($params),
-        ]);
-    }
+    $response = Http::withHeaders([
+        'x-tts-access-token' => $account->access_token,
+        'Content-Type'       => 'application/json',
+    ])
+    ->asJson()
+    ->post($url, $body);
+
+    dd([
+        'url'      => $url,
+        'params'   => $params,
+        'body'     => $body,
+        'status'   => $response->status(),
+        'response' => $response->json(),
+    ]);
+}
 
     public function sign(string $path, array $queries, array $body = [])
     {

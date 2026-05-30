@@ -110,14 +110,12 @@ class MarketplaceConnectionController extends Controller
         $timestamp = time();
 
         $path = '/authorization/202309/shops';
+        $sign = $this->signTiktokRequest($path, [
+            'app_key' => $appKey,
+            'timestamp' => $timestamp,
+        ]);
 
-        /*
-        |--------------------------------------------------------------------------
-        | TODO:
-        | GANTI DENGAN RUMUS SIGN RESMI TIKTOK
-        |--------------------------------------------------------------------------
-        */
-        $sign = 'GENERATE_SIGN_HERE';
+        $host = rtrim(config('services.tiktok.host', 'https://open-api.tiktokglobalshop.com'), '/');
 
         $shopResponse = Http::timeout(60)
             ->withHeaders([
@@ -125,11 +123,11 @@ class MarketplaceConnectionController extends Controller
                 'x-tts-access-token' => $accessToken,
             ])
             ->get(
-                'https://open-api.tiktokglobalshop.com/authorization/202309/shops',
+                $host . $path,
                 [
-                    'app_key'   => $appKey,
+                    'app_key' => $appKey,
                     'timestamp' => $timestamp,
-                    'sign'      => $sign,
+                    'sign' => $sign,
                 ]
             );
 
@@ -241,5 +239,27 @@ class MarketplaceConnectionController extends Controller
             'shop_name' => 'Shop Name',
             'expired_at' => now()->addDays(30),
         ];
+    }
+
+    protected function signTiktokRequest(string $path, array $params): string
+    {
+        $appSecret = config('services.tiktok.app_secret');
+
+        unset($params['sign']);
+        ksort($params);
+
+        $baseString = $appSecret . $path;
+
+        foreach ($params as $key => $value) {
+            if (is_array($value) || is_object($value)) {
+                $value = json_encode($value);
+            }
+
+            $baseString .= $key . $value;
+        }
+
+        $baseString .= $appSecret;
+
+        return hash('sha256', $baseString);
     }
 }

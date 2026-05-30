@@ -17,7 +17,7 @@ class TikTokService implements MarketplaceInterface
     public function __construct()
     {
         $this->host = rtrim(
-            config('services.tiktok.host', 'https://open-api.tiktokglobalshop.com'),
+            config('services.tiktok.host', 'https://open-api.tiktokshop.com'),
             '/'
         );
 

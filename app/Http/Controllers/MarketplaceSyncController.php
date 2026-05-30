@@ -28,17 +28,16 @@ class MarketplaceSyncController extends Controller
             'x-tts-access-token' => $account->access_token,
             'Content-Type' => 'application/json',
         ])->get(
-            'https://open-api.tiktokglobalshop.com' . $path,
-            $params
-        );
-dd([
-    'path' => $path,
-    'params' => $params,
-    'sign' => $params['sign'],
-
+                'https://open-api.tiktokglobalshop.com' . $path,
+                $params
+            );
+        dd([
+            'path' => $path,
+            'params' => $params,
+            'sign' => $params['sign'],
             'status' => $response->status(),
             'body' => $response->json(),
-]);
+        ]);
 
     }
     public function syncProductss($id)

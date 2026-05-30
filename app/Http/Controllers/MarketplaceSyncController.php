@@ -12,12 +12,12 @@ class MarketplaceSyncController extends Controller
 
         try {
             $account = MarketplaceAccount::findOrFail($id);
+            dd($account);
+            // $service = MarketplaceManager::driver($account->platform);
 
-            $service = MarketplaceManager::driver('tiktok');
+            // $result = $service->getProducts($account);
 
-            $result = $service->getProducts($account);
-
-            return response()->json($result);
+            // return response()->json($result);
 
         } catch (\Throwable $e) {
             dd([

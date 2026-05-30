@@ -134,6 +134,7 @@ class MarketplaceConnectionController extends Controller
             }
 
             $shopId = data_get($shopJson, 'data.shops.0.id');
+            $shopCipher = data_get($shopJson, 'data.shops.0.cipher');
 
             if (!$shopId) {
 
@@ -154,6 +155,7 @@ class MarketplaceConnectionController extends Controller
                 ],
                 [
                     'shop_id' => $shopId,
+                    'shop_cipher' => $shopCipher ?? '',
                     'shop_name' => $tokenData['seller_name'] ?? 'TikTok Shop',
                     'access_token' => $tokenData['access_token'],
                     'refresh_token' => $tokenData['refresh_token'],
@@ -227,20 +229,6 @@ class MarketplaceConnectionController extends Controller
         ]);
     }
 
-    // protected function getTiktokAuthUrl()
-    // {
-    //     $app_key = config('services.tiktok.app_key');
-    //     // $redirect_uri = route('marketplace.callback');
-    //     $redirect_uri = url('/callback/tiktok');
-
-    //     return "https://auth.tiktok-shops.com/oauth/authorize?" . http_build_query([
-    //         'app_key' => $app_key,
-    //         'response_type' => 'code',
-    //         'redirect_uri' => $redirect_uri,
-    //         'scope' => 'shop.basic_info,order.read',
-    //         'state' => csrf_token(),
-    //     ]);
-    // }
 
     protected function getLazadaAuthUrl()
     {

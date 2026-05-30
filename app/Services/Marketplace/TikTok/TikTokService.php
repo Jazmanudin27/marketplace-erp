@@ -57,49 +57,74 @@ class TikTokService implements MarketplaceInterface
             'shop_id' => $account->shop_id,
         ];
 
-        $queries['sign'] = $this->sign($path, $queries, $body);
+        $sign = $this->sign($path, $queries, $body);
+
+        $queries['sign'] = $sign;
 
         $url = $this->host . $path . '?' . http_build_query($queries);
 
         $response = Http::withHeaders([
             'x-tts-access-token' => trim($account->access_token),
+            'Content-Type' => 'application/json',
         ])->asForm()->post($url, $body);
 
         dd([
-            'host' => $this->host,
-            'shop_id' => $account->shop_id,
-            'token' => substr($account->access_token, 0, 20) . '...',
+            'base_string_debug' => $this->debugSignString($path, $queries, $body),
+            'sign' => $sign,
+            'url' => $url,
             'status' => $response->status(),
             'response' => $response->json(),
             'raw' => $response->body(),
         ]);
     }
 
-    private function sign(string $path, array $queries, array $body = []): string
+    private function debugSignString($path, $queries, $body)
 {
     unset($queries['sign']);
-    unset($queries['access_token']);
 
     ksort($queries);
 
-    $baseString = $this->appSecret . $path;
+    $s = $this->appSecret . $path;
 
-    foreach ($queries as $key => $value) {
-        $baseString .= $key . $value;
+    foreach ($queries as $k => $v) {
+        $s .= $k . $v;
     }
 
     if (!empty($body)) {
-        ksort($body); // ⚠️ INI WAJIB
-        $baseString .= json_encode(
-            $body,
-            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
-        );
+        ksort($body);
+        $s .= json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
-    $baseString .= $this->appSecret;
+    $s .= $this->appSecret;
 
-    return hash('sha256', $baseString);
+    return $s;
 }
+
+    private function sign(string $path, array $queries, array $body = []): string
+    {
+        unset($queries['sign']);
+        unset($queries['access_token']);
+
+        ksort($queries);
+
+        $baseString = $this->appSecret . $path;
+
+        foreach ($queries as $key => $value) {
+            $baseString .= $key . $value;
+        }
+
+        if (!empty($body)) {
+            ksort($body); // ⚠️ INI WAJIB
+            $baseString .= json_encode(
+                $body,
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            );
+        }
+
+        $baseString .= $this->appSecret;
+
+        return hash('sha256', $baseString);
+    }
     protected function validateResponse($response): array
     {
         if ($response->failed()) {

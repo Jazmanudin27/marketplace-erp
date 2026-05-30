@@ -40,69 +40,57 @@ class TikTokService implements MarketplaceInterface
             $account->refresh();
         }
     }
-    private function sign(string $path, array $queries, array $body = []): string
+
+    public function sign(string $path, array $params): string
     {
-        unset($queries['sign']);
-        unset($queries['access_token']);
+        unset($params['sign']);
 
-        ksort($queries);
+        ksort($params);
 
-        // ⚠️ INI PENTING: query HARUS jadi QUERY STRING
-        $queryString = http_build_query($queries);
+        $string = $this->appSecret . $path;
 
-        // body HARUS JSON STRING PASTI
-        $bodyString = '';
-        if (!empty($body)) {
-            ksort($body);
-            $bodyString = json_encode(
-                $body,
-                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
-            );
+        foreach ($params as $k => $v) {
+            // IMPORTANT: array/object must be string
+            if (is_array($v) || is_object($v)) {
+                $v = json_encode($v);
+            }
+            $string .= $k . $v;
         }
 
-        // FINAL STRING (INI YANG BENAR)
-        $baseString =
-            $this->appSecret .
-            $path .
-            $queryString .
-            $bodyString .
-            $this->appSecret;
+        $string .= $this->appSecret;
 
-        return hash('sha256', $baseString);
+        return hash('sha256', $string);
     }
+
+    /**
+     * =========================
+     * GET PRODUCTS (SEARCH)
+     * =========================
+     */
     public function getProducts($account)
     {
         $this->ensureValidToken($account);
 
         $path = '/product/202309/products/search';
 
-        $body = [
-            'page_size' => 100,
-        ];
+        $shopCipher = $account->shop_cipher ?: $account->shop_id;
 
-        $queries = [
+        if (!$shopCipher) {
+            throw new \Exception('shop_cipher kosong');
+        }
+
+        $params = [
             'app_key' => $this->appId,
-            'timestamp' => time(),
-            'shop_id' => $account->shop_id,
+            'timestamp' => (string) time(),
+            'shop_cipher' => $shopCipher,
+            'access_token' => $account->access_token,
+            'page_size' => 100,
+            'cursor' => 0,
         ];
 
-        $queries['sign'] = $this->sign($path, $queries, $body);
+        $params['sign'] = $this->sign($path, $params);
 
-        $url = $this->host . $path . '?' . http_build_query($queries);
-
-
-        $response = Http::withHeaders([
-            'x-tts-access-token' => $account->access_token,
-        ])->get($this->host . '/authorization/202309/shops');
-
-        dd([
-            'query_string' => http_build_query($queries),
-            'body' => $body,
-            'sign' => $queries['sign'],
-            'url' => $url,
-            'response' => $response->json(),
-            'raw' => $response->body(),
-        ]);
+        return Http::post($this->host . $path, $params)->json();
     }
 
     protected function validateResponse($response): array

@@ -40,6 +40,30 @@ class TikTokService implements MarketplaceInterface
             $account->refresh();
         }
     }
+    private function sign(string $path, array $queries, array $body = []): string
+    {
+        unset($queries['sign']);
+        unset($queries['access_token']);
+
+        ksort($queries);
+
+        $bodyString = '';
+        if (!empty($body)) {
+            ksort($body);
+            $bodyString = json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+
+        $base = $this->appSecret . $path;
+
+        foreach ($queries as $k => $v) {
+            $base .= $k . $v;
+        }
+
+        $base .= $bodyString;
+        $base .= $this->appSecret;
+
+        return hash('sha256', $base);
+    }
 
     public function getProducts($account)
     {
@@ -57,73 +81,22 @@ class TikTokService implements MarketplaceInterface
             'shop_id' => $account->shop_id,
         ];
 
-        $sign = $this->sign($path, $queries, $body);
-
-        $queries['sign'] = $sign;
+        $queries['sign'] = $this->sign($path, $queries, $body);
 
         $url = $this->host . $path . '?' . http_build_query($queries);
 
         $response = Http::withHeaders([
             'x-tts-access-token' => trim($account->access_token),
-            'Content-Type' => 'application/json',
+            'Content-Type' => 'application/x-www-form-urlencoded',
         ])->asForm()->post($url, $body);
 
         dd([
-            'base_string_debug' => $this->debugSignString($path, $queries, $body),
-            'sign' => $sign,
             'url' => $url,
-            'status' => $response->status(),
+            'body' => $body,
+            'sign' => $queries['sign'],
             'response' => $response->json(),
             'raw' => $response->body(),
         ]);
-    }
-
-    private function debugSignString($path, $queries, $body)
-{
-    unset($queries['sign']);
-
-    ksort($queries);
-
-    $s = $this->appSecret . $path;
-
-    foreach ($queries as $k => $v) {
-        $s .= $k . $v;
-    }
-
-    if (!empty($body)) {
-        ksort($body);
-        $s .= json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    }
-
-    $s .= $this->appSecret;
-
-    return $s;
-}
-
-    private function sign(string $path, array $queries, array $body = []): string
-    {
-        unset($queries['sign']);
-        unset($queries['access_token']);
-
-        ksort($queries);
-
-        $baseString = $this->appSecret . $path;
-
-        foreach ($queries as $key => $value) {
-            $baseString .= $key . $value;
-        }
-
-        if (!empty($body)) {
-            ksort($body); // ⚠️ INI WAJIB
-            $baseString .= json_encode(
-                $body,
-                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
-            );
-        }
-
-        $baseString .= $this->appSecret;
-
-        return hash('sha256', $baseString);
     }
     protected function validateResponse($response): array
     {

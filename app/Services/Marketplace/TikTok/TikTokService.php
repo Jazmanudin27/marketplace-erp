@@ -66,11 +66,14 @@ class TikTokService implements MarketplaceInterface
     $url = $this->host . $path . '?' . http_build_query($params);
 
     $response = Http::withHeaders([
-        'x-tts-access-token' => $account->access_token,
-        'Content-Type'       => 'application/json',
-    ])
-    ->asJson()
-    ->post($url, $body);
+    'x-tts-access-token' => $account->access_token,
+    'Content-Type' => 'application/json',
+])
+->withBody(
+    json_encode($body),
+    'application/json'
+)
+->post($url);
     dd([
         'url'      => $url,
         'params'   => $params,

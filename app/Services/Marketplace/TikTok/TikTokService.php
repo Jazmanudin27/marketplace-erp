@@ -48,9 +48,9 @@ class TikTokService implements MarketplaceInterface
         $path = '/product/202309/products/search';
 
         $params = [
-            'app_key'   => $this->appId,
+            'app_key' => $this->appId,
             'timestamp' => time(),
-            'shop_id'   => $account->shop_id,
+            'shop_id' => $account->shop_id,
             'page_size' => 100,
         ];
 
@@ -66,13 +66,13 @@ class TikTokService implements MarketplaceInterface
 
         $response = Http::withHeaders([
             'x-tts-access-token' => $account->access_token,
-            'Content-Type'       => 'application/json',
+            'Content-Type' => 'application/json',
         ])->post($url, []);
 
         dd([
-            'url'      => $url,
+            'url' => $url,
             'response' => $response->json(),
-            'status'   => $response->status(),
+            'status' => $response->status(),
         ]);
     }
 
@@ -83,13 +83,10 @@ class TikTokService implements MarketplaceInterface
 
         ksort($queries);
 
-        $signString = $this->appSecret . $path;
+        $signString = $this->appSecret;
+        $signString .= $path;
 
         foreach ($queries as $key => $value) {
-            if (is_array($value) || is_object($value)) {
-                continue;
-            }
-
             $signString .= $key . $value;
         }
 
@@ -102,6 +99,8 @@ class TikTokService implements MarketplaceInterface
         }
 
         $signString .= $this->appSecret;
+
+        dd($signString);
 
         return hash_hmac(
             'sha256',

@@ -148,26 +148,7 @@ class MarketplaceConnectionController extends Controller
             | 3. SIMPAN ACCOUNT
             |--------------------------------------------------------------------------
             */
-            MarketplaceAccount::updateOrCreate(
-                [
-                    'company_id' => $company->id,
-                    'platform' => 'tiktok',
-                ],
-                [
-                    'shop_id' => $shopId,
-                    'shop_cipher' => $shopCipher ?? '',
-                    'shop_name' => $tokenData['seller_name'] ?? 'TikTok Shop',
-                    'access_token' => $tokenData['access_token'],
-                    'refresh_token' => $tokenData['refresh_token'],
-                    'expired_at' => Carbon::createFromTimestamp(
-                        $tokenData['access_token_expire_in']
-                    ),
-                ]
-            );
-
-            return redirect()
-                ->route('marketplace.accounts')
-                ->with('success', 'TikTok Shop berhasil terhubung.');
+            dd($shopJson);
 
         } catch (\Throwable $e) {
 

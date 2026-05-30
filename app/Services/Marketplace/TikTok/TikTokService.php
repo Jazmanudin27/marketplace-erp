@@ -41,21 +41,20 @@ class TikTokService implements MarketplaceInterface
         }
     }
 
-   public function getProducts($account)
+    public function getProducts($account)
     {
         $this->ensureValidToken($account);
 
-        $path = '/product/202502/products/search';
+        $path = '/product/202309/products/search';
 
         $params = [
-            'app_key'     => $this->appId,
-            'timestamp'   => time(),
-            'page_size'   => 100,
-            'shop_cipher' => $account->shop_cipher,
+            'app_key' => $this->appId,
+            'timestamp' => time(),
+            'shop_id' => $account->shop_id,
         ];
 
         $body = [
-            'status' => 'ALL',
+            'page_size' => 100,
         ];
 
         $params['sign'] = $this->sign(
@@ -68,10 +67,14 @@ class TikTokService implements MarketplaceInterface
 
         $response = Http::withHeaders([
             'x-tts-access-token' => $account->access_token,
-            'Content-Type'       => 'application/json',
+            'Content-Type' => 'application/json',
         ])->post($url, $body);
 
-        return $response->json();
+        dd([
+            'url' => $url,
+            'body' => $body,
+            'response' => $response->json(),
+        ]);
     }
 
     public function sign(string $path, array $queries, array $body = [])

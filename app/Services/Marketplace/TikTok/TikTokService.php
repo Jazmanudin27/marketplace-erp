@@ -40,64 +40,70 @@ class TikTokService implements MarketplaceInterface
             $account->refresh();
         }
     }
-    private function sign(string $path, array $queries, array $body = []): string
-    {
-        unset($queries['sign']);
-        unset($queries['access_token']);
+   private function sign(string $path, array $queries, array $body = []): string
+{
+    unset($queries['sign']);
+    unset($queries['access_token']);
 
-        ksort($queries);
+    ksort($queries);
 
-        $bodyString = '';
-        if (!empty($body)) {
-            ksort($body);
-            $bodyString = json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        }
+    // ⚠️ INI PENTING: query HARUS jadi QUERY STRING
+    $queryString = http_build_query($queries);
 
-        $base = $this->appSecret . $path;
-
-        foreach ($queries as $k => $v) {
-            $base .= $k . $v;
-        }
-
-        $base .= $bodyString;
-        $base .= $this->appSecret;
-
-        return hash('sha256', $base);
+    // body HARUS JSON STRING PASTI
+    $bodyString = '';
+    if (!empty($body)) {
+        ksort($body);
+        $bodyString = json_encode(
+            $body,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
     }
 
+    // FINAL STRING (INI YANG BENAR)
+    $baseString =
+        $this->appSecret .
+        $path .
+        $queryString .
+        $bodyString .
+        $this->appSecret;
+
+    return hash('sha256', $baseString);
+}
     public function getProducts($account)
-    {
-        $this->ensureValidToken($account);
+{
+    $this->ensureValidToken($account);
 
-        $path = '/product/202309/products/search';
+    $path = '/product/202309/products/search';
 
-        $body = [
-            'page_size' => 100,
-        ];
+    $body = [
+        'page_size' => 100,
+    ];
 
-        $queries = [
-            'app_key' => $this->appId,
-            'timestamp' => time(),
-            'shop_id' => $account->shop_id,
-        ];
+    $queries = [
+        'app_key'   => $this->appId,
+        'timestamp' => time(),
+        'shop_id'   => $account->shop_id,
+    ];
 
-        $queries['sign'] = $this->sign($path, $queries, $body);
+    $queries['sign'] = $this->sign($path, $queries, $body);
 
-        $url = $this->host . $path . '?' . http_build_query($queries);
+    $url = $this->host . $path . '?' . http_build_query($queries);
 
-        $response = Http::withHeaders([
-            'x-tts-access-token' => trim($account->access_token),
-            'Content-Type' => 'application/x-www-form-urlencoded',
-        ])->asForm()->post($url, $body);
+    $response = Http::withHeaders([
+        'x-tts-access-token' => trim($account->access_token),
+    ])->asForm()->post($url, $body);
 
-        dd([
-            'url' => $url,
-            'body' => $body,
-            'sign' => $queries['sign'],
-            'response' => $response->json(),
-            'raw' => $response->body(),
-        ]);
-    }
+    dd([
+        'query_string' => http_build_query($queries),
+        'body' => $body,
+        'sign' => $queries['sign'],
+        'url' => $url,
+        'response' => $response->json(),
+        'raw' => $response->body(),
+    ]);
+}
+
     protected function validateResponse($response): array
     {
         if ($response->failed()) {

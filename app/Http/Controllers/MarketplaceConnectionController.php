@@ -54,10 +54,6 @@ class MarketplaceConnectionController extends Controller
     public function callback(Request $request)
     {
         try {
-            dd([
-                'all' => $request->all(),
-                'query' => $request->query(),
-            ]);
 
             if ($request->filled('error') && $request->error === 'auth_denied') {
                 return redirect()
@@ -99,6 +95,7 @@ class MarketplaceConnectionController extends Controller
 
             $response = $tokenResponse->json();
 
+
             if (($response['code'] ?? -1) != 0) {
 
                 return redirect()
@@ -114,7 +111,12 @@ class MarketplaceConnectionController extends Controller
             $expiresAt = isset($data['access_token_expire_in'])
                 ? Carbon::createFromTimestamp((int) $data['access_token_expire_in'])
                 : null;
-
+            dd([
+                'all' => $request->all(),
+                'query' => $request->query(),
+                'response' => $response(),
+                'data' => $data(),
+            ]);
             MarketplaceAccount::updateOrCreate(
                 [
                     'platform' => 'tiktok',

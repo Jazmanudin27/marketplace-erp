@@ -109,13 +109,9 @@ class MarketplaceConnectionController extends Controller
                 [
                     // sementara pakai open_id
                     'shop_id' => $tokenData['open_id'] ?? null,
-
                     'shop_name' => $tokenData['seller_name'] ?? 'TikTok Shop',
-
                     'access_token' => $tokenData['access_token'] ?? null,
-
                     'refresh_token' => $tokenData['refresh_token'] ?? null,
-
                     'expired_at' => isset($tokenData['access_token_expire_in'])
                         ? Carbon::createFromTimestamp(
                             $tokenData['access_token_expire_in']

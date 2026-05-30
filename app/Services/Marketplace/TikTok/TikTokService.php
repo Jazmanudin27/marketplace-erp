@@ -73,25 +73,33 @@ class TikTokService implements MarketplaceInterface
 
         $path = '/product/202309/products/search';
 
-        $shopCipher = $account->shop_cipher ?: $account->shop_id;
+        $shopCipher = $account->shop_cipher ?? null;
+
+        if (!$shopCipher) {
+            throw new Exception(
+                'shop_cipher belum tersedia. Simpan shop_cipher terlebih dahulu dari TikTok.'
+            );
+        }
 
         $params = [
             'app_key' => $this->appId,
-            'timestamp' => (string) time(),
+            'timestamp' => time(),
             'shop_cipher' => $shopCipher,
-            'access_token' => $account->access_token,
             'page_size' => 100,
             'cursor' => 0,
         ];
 
         $params['sign'] = $this->sign($path, $params);
 
-        dd([
-            'url' => $this->host . $path,
-            'params' => $params,
-            'shop_id' => $account->shop_id,
-            'token_prefix' => substr($account->access_token, 0, 20),
-        ]);
+        $response = Http::withHeaders([
+            'x-tts-access-token' => $account->access_token,
+            'Content-Type' => 'application/json',
+        ])->post(
+            $this->host . $path,
+            $params
+        );
+
+        return $response->json();
     }
 
     protected function validateResponse($response): array

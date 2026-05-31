@@ -59,20 +59,26 @@ class MarketplaceConnectionController extends Controller
     public function callback(Request $request)
     {
         try {
-            $platform = $request->platform ?? 'tiktok'; // fallback
+            // DEBUG DULU (WAJIB TEST)
+            // dd($request->all());
+
+            $platform = 'tiktok';
+
+            if (!$request->code) {
+                return redirect()->route('marketplace.accounts')
+                    ->with('error', 'Authorization code tidak ditemukan dari TikTok');
+            }
 
             $manager = new MarketplaceManager();
             $driver = $manager->driver($platform);
 
-            // ambil access token dari code
             $tokenData = $driver->getAccessToken($request->all());
 
-            if (!$tokenData || !isset($tokenData['access_token'])) {
+            if (!$tokenData) {
                 return redirect()->route('marketplace.accounts')
-                    ->with('error', 'Gagal mendapatkan access token');
+                    ->with('error', 'Token gagal didapatkan');
             }
 
-            // ambil info shop
             $shop = $driver->getShopInfo($tokenData['access_token']);
 
             MarketplaceAccount::updateOrCreate(
@@ -90,14 +96,13 @@ class MarketplaceConnectionController extends Controller
             );
 
             return redirect()->route('marketplace.accounts')
-                ->with('success', 'Marketplace berhasil terhubung');
+                ->with('success', 'TikTok berhasil connect');
 
         } catch (\Exception $e) {
             return redirect()->route('marketplace.accounts')
                 ->with('error', $e->getMessage());
         }
     }
-
     public function disconnect(MarketplaceAccount $account)
     {
         $account->delete();

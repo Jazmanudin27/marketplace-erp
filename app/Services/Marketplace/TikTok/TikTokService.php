@@ -12,10 +12,12 @@ class TikTokService
     public function getAuthUrl()
     {
         $appKey = config('services.tiktok.app_key');
-        $redirect = route('marketplace.callback', ['platform' => 'tiktok']);
+
+        $redirect = urlencode(route('marketplace.callback'));
 
         $state = base64_encode(json_encode([
             'company_id' => Auth::user()->company_id,
+            'platform' => 'tiktok',
             'time' => time()
         ]));
 

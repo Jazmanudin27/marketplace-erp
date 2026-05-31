@@ -61,8 +61,9 @@ class MarketplaceConnectionController extends Controller
     try {
 
         $manager = new MarketplaceManager();
+        $driver = $manager->driver('tiktok');
 
-        dd($manager);
+        dd($driver);
 
     } catch (\Throwable $e) {
 

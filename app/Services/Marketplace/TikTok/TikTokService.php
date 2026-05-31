@@ -126,6 +126,9 @@ class TikTokService
         dd([
             'shop_id' => $account->shop_id,
             'shop_cipher' => $account->shop_cipher,
+            'path' => $path,
+            'params' => $params,
+            'sign' => $params['sign'],
         ]);
         return [
             'url' => 'https://open-api.tiktokglobalshop.com' . $path,

@@ -33,13 +33,24 @@ class MarketplaceConnectionController extends Controller
      */
     public function connect(Request $request)
     {
-        $platform = $request->platform;
+        try {
+            $request->validate([
+                'platform' => 'required|in:shopee,tiktok'
+            ]);
 
-        $manager = new MarketplaceManager();
+            $platform = $request->platform;
 
-        $authUrl = $manager->driver($platform)->getAuthUrl();
+            $manager = new MarketplaceManager();
 
-        return redirect($authUrl);
+            $driver = $manager->driver($platform);
+
+            $authUrl = $driver->getAuthUrl();
+
+            return redirect()->away($authUrl);
+
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 
     /**

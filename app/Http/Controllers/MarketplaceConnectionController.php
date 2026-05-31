@@ -58,17 +58,12 @@ class MarketplaceConnectionController extends Controller
      */
     public function callback(Request $request)
 {
-    try {
+    $manager = new MarketplaceManager();
+    $driver = $manager->driver('tiktok');
 
-        $manager = new MarketplaceManager();
-        $driver = $manager->driver('tiktok');
+    $tokenData = $driver->getAccessToken($request->all());
 
-        dd($driver);
-
-    } catch (\Throwable $e) {
-
-        dd($e->getMessage());
-    }
+    dd($tokenData);
 }
     public function disconnect(MarketplaceAccount $account)
     {

@@ -93,6 +93,29 @@ class TikTokService
         );
     }
 
+    protected function sign(string $path, array $params): string
+    {
+        unset($params['sign']);
+
+        ksort($params);
+
+        $secret = config('services.tiktok.app_secret');
+
+        $string = $secret . $path;
+
+        foreach ($params as $key => $value) {
+            $string .= $key . $value;
+        }
+
+        $string .= $secret;
+
+        return hash_hmac(
+            'sha256',
+            $string,
+            $secret
+        );
+    }
+
     public function getProducts($account)
     {
         $path = '/product/202309/products/search';
@@ -103,7 +126,7 @@ class TikTokService
             'page_size' => 100,
         ];
 
-        $params['sign'] = $this->generateSign($path, $params);
+        $params['sign'] = $this->sign($path, $params);
 
         $response = Http::withHeaders([
             'x-tts-access-token' => $account->access_token,

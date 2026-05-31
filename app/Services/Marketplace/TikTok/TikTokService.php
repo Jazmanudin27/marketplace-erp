@@ -66,8 +66,8 @@ class TikTokService
                 'https://open-api.tiktokglobalshop.com' . $path,
                 $params
             );
-
-        return $response->json();
+        dd($response->json());
+        // return $response->json();
     }
 
     protected function generateSign(string $path, array $params): string

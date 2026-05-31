@@ -59,51 +59,78 @@ class MarketplaceConnectionController extends Controller
     public function callback(Request $request)
     {
         try {
+
             $platform = 'tiktok';
 
-            if (!$request->code) {
-                return redirect()->route('marketplace.accounts')
+            if (!$request->filled('code')) {
+                return redirect()
+                    ->route('marketplace.accounts')
                     ->with('error', 'Authorization code tidak ditemukan dari TikTok');
             }
 
             $manager = new MarketplaceManager();
             $driver = $manager->driver($platform);
 
+            /*
+            |--------------------------------------------------------------------------
+            | Ambil Access Token
+            |--------------------------------------------------------------------------
+            */
             $tokenData = $driver->getAccessToken($request->all());
 
-            if (!$tokenData) {
-                return redirect()->route('marketplace.accounts')
-                    ->with('error', 'Token gagal didapatkan');
+            if (!$tokenData || empty($tokenData['access_token'])) {
+                return redirect()
+                    ->route('marketplace.accounts')
+                    ->with('error', 'Gagal mendapatkan Access Token TikTok');
             }
 
-            $shop = $driver->getShopInfo($tokenData['access_token']);
-            dd([
-                'request' => $request->all(),
-                'tokenData' => $tokenData,
-                'shopInfo' => $shop,
-            ]);
-            // $shopId = $shop['shop_id'] ?? $shop['shop_cipher'] ?? $shop['id'] ?? null;
+            /*
+            |--------------------------------------------------------------------------
+            | Ambil Data Shop
+            |--------------------------------------------------------------------------
+            */
+            $shopInfo = $driver->getShopInfo($tokenData['access_token']);
 
-            // MarketplaceAccount::updateOrCreate(
-            //     [
-            //         'company_id' => Auth::user()->company_id,
-            //         'platform' => $platform,
-            //         'shop_id' => $shopId,
-            //     ],
-            //     [
-            //         'shop_name' => $shop['shop_name'] ?? null,
-            //         'shop_cipher' => $shop['shop_cipher'] ?? null,
-            //         'access_token' => $tokenData['access_token'],
-            //         'refresh_token' => $tokenData['refresh_token'] ?? null,
-            //         'expired_at' => now()->addSeconds($tokenData['expires_in'] ?? 86400),
-            //     ]
-            // );
+            $shop = $shopInfo['shops'][0] ?? null;
 
-            // return redirect()->route('marketplace.accounts')
-            //     ->with('success', 'TikTok berhasil connect');
+            if (!$shop) {
+                return redirect()
+                    ->route('marketplace.accounts')
+                    ->with('error', 'Data toko TikTok tidak ditemukan');
+            }
 
-        } catch (\Exception $e) {
-            return redirect()->route('marketplace.accounts')
+            $shopId = $shop['id'];
+
+            /*
+            |--------------------------------------------------------------------------
+            | Simpan / Update Marketplace Account
+            |--------------------------------------------------------------------------
+            */
+            MarketplaceAccount::updateOrCreate(
+                [
+                    'company_id' => Auth::user()->company_id,
+                    'platform' => 'tiktok',
+                    'shop_id' => $shopId,
+                ],
+                [
+                    'shop_name' => $tokenData['seller_name'] ?? 'TikTok Shop',
+                    'shop_cipher' => $shopId, // API terbaru tidak mengembalikan shop_cipher
+                    'access_token' => $tokenData['access_token'],
+                    'refresh_token' => $tokenData['refresh_token'] ?? null,
+                    'expired_at' => isset($tokenData['access_token_expire_in'])
+                        ? now()->addSeconds($tokenData['access_token_expire_in'])
+                        : null,
+                ]
+            );
+
+            return redirect()
+                ->route('marketplace.accounts')
+                ->with('success', 'TikTok Shop berhasil terhubung');
+
+        } catch (\Throwable $e) {
+
+            return redirect()
+                ->route('marketplace.accounts')
                 ->with('error', $e->getMessage());
         }
     }

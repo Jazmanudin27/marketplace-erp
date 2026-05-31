@@ -117,9 +117,7 @@ class MarketplaceConnectionController extends Controller
                     'shop_cipher' => $shopId, // API terbaru tidak mengembalikan shop_cipher
                     'access_token' => $tokenData['access_token'],
                     'refresh_token' => $tokenData['refresh_token'] ?? null,
-                    'expired_at' => isset($tokenData['access_token_expire_in'])
-                        ? now()->addSeconds($tokenData['access_token_expire_in'])
-                        : null,
+                    'expired_at' => $tokenData['access_token_expire_in'] ?? null,
                 ]
             );
 

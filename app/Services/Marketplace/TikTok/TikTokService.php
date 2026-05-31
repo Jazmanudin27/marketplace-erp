@@ -104,40 +104,15 @@ class TikTokService
             'shop_cipher' => $account->shop_cipher,
         ];
 
-        $params['sign'] = $this->generateProductSign(
-            $path,
-            $params
-        );
-$secret = config('services.tiktok.app_secret');
-
-    $tmp = $params;
-
-    unset($tmp['sign']);
-
-    ksort($tmp);
-
-    $string = $secret . $path;
-
-    foreach ($tmp as $key => $value) {
-        $string .= $key . $value;
-    }
-
-    $string .= $secret;
-
-    $generatedSign = hash_hmac(
-        'sha256',
-        $string,
-        $secret
-    );
-
-    dd([
-        'string' => $string,
-        'generated_sign' => $generatedSign,
-        'params' => $tmp,
-    ]);
         $body = [
             'status' => 'ALL',
         ];
+
+        $params['sign'] = $this->generateProductSign(
+            $path,
+            $params,
+            $body
+        );
 
         $response = Http::withHeaders([
             'x-tts-access-token' => $account->access_token,
@@ -167,8 +142,11 @@ $secret = config('services.tiktok.app_secret');
         // ];
     }
 
-    protected function generateProductSign(string $path, array $params): string
-    {
+    protected function generateProductSign(
+        string $path,
+        array $params,
+        array $body = []
+    ): string {
         unset($params['sign']);
 
         ksort($params);
@@ -181,8 +159,19 @@ $secret = config('services.tiktok.app_secret');
             $string .= $key . $value;
         }
 
+        if (!empty($body)) {
+            $string .= json_encode(
+                $body,
+                JSON_UNESCAPED_SLASHES
+            );
+        }
+
         $string .= $secret;
 
-        return hash('sha256', $string);
+        return hash_hmac(
+            'sha256',
+            $string,
+            $secret
+        );
     }
 }

@@ -171,7 +171,7 @@ class TikTokService
 
     public function getOrders($account)
     {
-        $response = $this->request(
+        $response = $this->requestAccessTokenOrder(
             '/order/202309/orders/search',
             [
                 'page_size' => 50,
@@ -179,7 +179,7 @@ class TikTokService
             ],
             $account->access_token
         );
-
+        dd($response);
         $data = $response['data'] ?? $response;
 
         return $data['orders']
@@ -188,7 +188,7 @@ class TikTokService
             ?? [];
     }
 
-    protected function request(string $path, array $body, string $accessToken): array
+    protected function requestAccessTokenOrder(string $path, array $body, string $accessToken): array
     {
         $params = [
             'app_key' => config('services.tiktok.app_key'),
@@ -196,7 +196,7 @@ class TikTokService
             'shop_cipher' => $body['shop_cipher'] ?? null,
         ];
 
-        $params = array_filter($params, static fn ($value) => $value !== null && $value !== '');
+        $params = array_filter($params, static fn($value) => $value !== null && $value !== '');
 
         $params['sign'] = $this->generateProductSign(
             $path,
@@ -208,9 +208,9 @@ class TikTokService
             'x-tts-access-token' => $accessToken,
             'Content-Type' => 'application/json',
         ])->post(
-            'https://open-api.tiktokglobalshop.com' . $path . '?' . http_build_query($params),
-            $body
-        );
+                'https://open-api.tiktokglobalshop.com' . $path . '?' . http_build_query($params),
+                $body
+            );
 
         $result = $response->json();
 

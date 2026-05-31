@@ -99,8 +99,28 @@ class MarketplaceConnectionController extends Controller
                 $tokenData['access_token']
             );
 
-            $shop = $shopInfo['shops'][0] ?? null;
+            $shop = $shopInfo['data']['shops'][0] ?? null;
+
+            if (!$shop) {
+                return redirect()
+                    ->route('marketplace.accounts')
+                    ->with('error', 'Shop TikTok tidak ditemukan');
+            }
+
             $shopId = $shop['id'];
+
+            $state = json_decode(
+                base64_decode($request->state),
+                true
+            );
+
+            $companyId = $state['company_id'] ?? null;
+
+            dd([
+                'companyId' => $companyId,
+                'shopId' => $shopId,
+                'shop' => $shop,
+            ]);
 
             /*
             |--------------------------------------------------------------------------

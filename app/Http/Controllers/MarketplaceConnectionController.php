@@ -106,20 +106,42 @@ class MarketplaceConnectionController extends Controller
             | Simpan / Update Marketplace Account
             |--------------------------------------------------------------------------
             */
-            MarketplaceAccount::updateOrCreate(
-                [
-                    'company_id' => Auth::user()->company_id,
+            dd([
+                'auth_user' => Auth::user(),
+                'company_id' => Auth::user()->company_id ?? null,
+
+                'tokenData' => $tokenData,
+
+                'shopInfo' => $shopInfo,
+
+                'shop' => $shop,
+
+                'save_data' => [
+                    'company_id' => Auth::user()->company_id ?? null,
                     'platform' => 'tiktok',
                     'shop_id' => $shopId,
-                ],
-                [
+
                     'shop_name' => $tokenData['seller_name'] ?? 'TikTok Shop',
-                    'shop_cipher' => $shopId, // API terbaru tidak mengembalikan shop_cipher
+                    'shop_cipher' => $shopId,
                     'access_token' => $tokenData['access_token'],
                     'refresh_token' => $tokenData['refresh_token'] ?? null,
                     'expired_at' => $tokenData['access_token_expire_in'] ?? null,
                 ]
-            );
+            ]);
+            // MarketplaceAccount::updateOrCreate(
+            //     [
+            //         'company_id' => Auth::user()->company_id,
+            //         'platform' => 'tiktok',
+            //         'shop_id' => $shopId,
+            //     ],
+            //     [
+            //         'shop_name' => $tokenData['seller_name'] ?? 'TikTok Shop',
+            //         'shop_cipher' => $shopId, // API terbaru tidak mengembalikan shop_cipher
+            //         'access_token' => $tokenData['access_token'],
+            //         'refresh_token' => $tokenData['refresh_token'] ?? null,
+            //         'expired_at' => $tokenData['access_token_expire_in'] ?? null,
+            //     ]
+            // );
 
             return redirect()
                 ->route('marketplace.accounts')

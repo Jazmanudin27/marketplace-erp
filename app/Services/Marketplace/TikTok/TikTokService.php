@@ -50,13 +50,51 @@ class TikTokService
 
     public function getShopInfo($accessToken)
     {
+        $path = '/seller/202309/shops';
+
+        $params = [
+            'app_key' => config('services.tiktok.app_key'),
+            'timestamp' => time(),
+        ];
+
+        $params['sign'] = $this->generateSign($path, $params);
+
         $response = Http::withHeaders([
             'x-tts-access-token' => $accessToken,
             'Content-Type' => 'application/json',
-        ])->get('https://open-api.tiktokglobalshop.com/seller/202309/shops');
+        ])->get(
+                'https://open-api.tiktokglobalshop.com' . $path,
+                $params
+            );
 
-        dd($response->status(), $response->json());
+        dd(
+            $response->status(),
+            $response->json()
+        );
 
         return $response->json();
+    }
+
+    protected function generateSign(string $path, array $params): string
+    {
+        unset($params['sign']);
+
+        ksort($params);
+
+        $string = config('services.tiktok.app_secret');
+
+        $string .= $path;
+
+        foreach ($params as $key => $value) {
+            $string .= $key . $value;
+        }
+
+        $string .= config('services.tiktok.app_secret');
+
+        return hash_hmac(
+            'sha256',
+            $string,
+            config('services.tiktok.app_secret')
+        );
     }
 }

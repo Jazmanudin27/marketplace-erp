@@ -59,9 +59,6 @@ class MarketplaceConnectionController extends Controller
     public function callback(Request $request)
     {
         try {
-            // DEBUG DULU (WAJIB TEST)
-            // dd($request->all());
-
             $platform = 'tiktok';
 
             if (!$request->code) {
@@ -80,25 +77,30 @@ class MarketplaceConnectionController extends Controller
             }
 
             $shop = $driver->getShopInfo($tokenData['access_token']);
-            $shopId = $shop['shop_id'] ?? $shop['shop_cipher'] ?? $shop['id'] ?? null;
+            dd([
+                'request' => $request->all(),
+                'tokenData' => $tokenData,
+                'shopInfo' => $shop,
+            ]);
+            // $shopId = $shop['shop_id'] ?? $shop['shop_cipher'] ?? $shop['id'] ?? null;
 
-            MarketplaceAccount::updateOrCreate(
-                [
-                    'company_id' => Auth::user()->company_id,
-                    'platform' => $platform,
-                    'shop_id' => $shopId,
-                ],
-                [
-                    'shop_name' => $shop['shop_name'] ?? null,
-                    'shop_cipher' => $shop['shop_cipher'] ?? null,
-                    'access_token' => $tokenData['access_token'],
-                    'refresh_token' => $tokenData['refresh_token'] ?? null,
-                    'expired_at' => now()->addSeconds($tokenData['expires_in'] ?? 86400),
-                ]
-            );
+            // MarketplaceAccount::updateOrCreate(
+            //     [
+            //         'company_id' => Auth::user()->company_id,
+            //         'platform' => $platform,
+            //         'shop_id' => $shopId,
+            //     ],
+            //     [
+            //         'shop_name' => $shop['shop_name'] ?? null,
+            //         'shop_cipher' => $shop['shop_cipher'] ?? null,
+            //         'access_token' => $tokenData['access_token'],
+            //         'refresh_token' => $tokenData['refresh_token'] ?? null,
+            //         'expired_at' => now()->addSeconds($tokenData['expires_in'] ?? 86400),
+            //     ]
+            // );
 
-            return redirect()->route('marketplace.accounts')
-                ->with('success', 'TikTok berhasil connect');
+            // return redirect()->route('marketplace.accounts')
+            //     ->with('success', 'TikTok berhasil connect');
 
         } catch (\Exception $e) {
             return redirect()->route('marketplace.accounts')

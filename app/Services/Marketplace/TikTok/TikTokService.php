@@ -103,21 +103,6 @@ class TikTokService
             'page_size' => 100,
             'shop_cipher' => $account->shop_cipher,
         ];
-        $secret = config('services.tiktok.app_secret');
-
-        $tmp = $params;
-
-        unset($tmp['sign']);
-
-        ksort($tmp);
-
-        $string = $secret . $path;
-
-        foreach ($tmp as $key => $value) {
-            $string .= $key . $value;
-        }
-
-        $string .= $secret;
 
         $body = [
             'status' => 'ALL',
@@ -128,7 +113,7 @@ class TikTokService
             $params,
             $body
         );
-       
+
         $response = Http::withHeaders([
             'x-tts-access-token' => $account->access_token,
             'Content-Type' => 'application/json',
@@ -140,21 +125,15 @@ class TikTokService
                 $body
             );
 
-        dd([
-            'url' => 'https://open-api.tiktokglobalshop.com' . $path,
-            'query' => $params,
-            'body' => $body,
-            'status' => $response->status(),
-            'json' => $response->json(),
-            'raw' => $response->body(),
-        ]);
-        // return [
-        //     'url' => 'https://open-api.tiktokglobalshop.com' . $path,
-        //     'query' => $params,
-        //     'body' => $body,
-        //     'status' => $response->status(),
-        //     'json' => $response->json(),
-        // ];
+        $result = $response->json();
+
+        if (($result['code'] ?? -1) !== 0) {
+            throw new \Exception(
+                $result['message'] ?? 'Gagal mengambil produk TikTok'
+            );
+        }
+
+        return $result['data']['products'] ?? [];
     }
 
     protected function generateProductSign(

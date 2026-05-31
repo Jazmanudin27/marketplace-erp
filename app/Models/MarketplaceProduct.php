@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Product extends Model
+class MarketplaceProduct extends Model
 {
     use HasFactory;
 
-    protected $table = 'products';
+    protected $table = 'marketplace_products';
 
     protected $fillable = [
         'marketplace_account_id',

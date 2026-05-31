@@ -53,9 +53,6 @@ class MarketplaceConnectionController extends Controller
         }
     }
 
-    /**
-     * Callback OAuth Shopee / TikTok
-     */
     public function callback(Request $request)
     {
         try {
@@ -65,11 +62,6 @@ class MarketplaceConnectionController extends Controller
             $manager = new MarketplaceManager();
             $driver = $manager->driver($platform);
 
-            /*
-            |--------------------------------------------------------------------------
-            | GET TOKEN
-            |--------------------------------------------------------------------------
-            */
             $response = Http::get(
                 'https://auth.tiktok-shops.com/api/v2/token/get',
                 [
@@ -90,11 +82,6 @@ class MarketplaceConnectionController extends Controller
 
             $tokenData = $data['data'];
 
-            /*
-            |--------------------------------------------------------------------------
-            | GET SHOP
-            |--------------------------------------------------------------------------
-            */
             $shopInfo = $driver->getShopInfo(
                 $tokenData['access_token']
             );
@@ -114,24 +101,12 @@ class MarketplaceConnectionController extends Controller
 
             $companyId = $state['company_id'] ?? null;
 
-            /*
-            |--------------------------------------------------------------------------
-            | COMPANY ID
-            |--------------------------------------------------------------------------
-            */
             $state = json_decode(
                 base64_decode($request->state),
                 true
             );
 
             $companyId = $state['company_id'] ?? null;
-
-            /*
-            |--------------------------------------------------------------------------
-            | SAVE
-            |--------------------------------------------------------------------------
-            */
-
 
             MarketplaceAccount::updateOrCreate(
                 [

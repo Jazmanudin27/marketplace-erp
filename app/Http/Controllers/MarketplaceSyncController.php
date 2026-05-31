@@ -57,11 +57,12 @@ class MarketplaceSyncController extends Controller
                 }
             }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Produk berhasil disinkronkan',
-                'total' => count($products),
-            ]);
+            // return response()->json([
+            //     'success' => true,
+            //     'message' => 'Produk berhasil disinkronkan',
+            //     'total' => count($products),
+            // ]);
+            return redirect()->back()->with('success', 'Produk berhasil disinkronkan');
 
         } catch (\Throwable $e) {
 

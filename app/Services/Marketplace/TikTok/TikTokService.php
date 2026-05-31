@@ -181,9 +181,10 @@ class TikTokService
             'app_key' => config('services.tiktok.app_key'),
             'timestamp' => time(),
             'shop_cipher' => $account->shop_cipher,
-
             'page_size' => 50,
             'page' => 1,
+            'create_time_ge' => now()->subDays(7)->timestamp,
+            'create_time_lt' => now()->timestamp,
         ];
 
         $jsonBody = json_encode($body);
@@ -199,6 +200,11 @@ class TikTokService
 
         $result = $response->json();
 
+        dd([
+            'http_status' => $response->status(),
+            'response_raw' => $response->body(),
+            'response_json' => $result,
+        ]);
         if (($result['code'] ?? -1) !== 0) {
             throw new \Exception($result['message'] ?? 'Gagal mengambil orders TikTok');
         }

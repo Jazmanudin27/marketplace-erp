@@ -203,16 +203,31 @@ class MarketplaceConnectionController extends Controller
 
     protected function getTiktokAuthUrl()
     {
-        return rtrim(
+        $baseUrl = rtrim(
             config(
                 'services.tiktok.auth_base_url',
                 'https://services.tiktokshop.com/open/authorize'
             ),
             '/'
+        );
+
+        $serviceId = config('services.tiktok.service_id');
+
+        if (!$serviceId && str_contains($baseUrl, 'services.tiktokshop.com')) {
+            $serviceId = '7431458374265161478';
+        }
+
+        if (!$serviceId) {
+            throw new \RuntimeException('TIKTOK_SERVICE_ID belum diisi. Isi service_id dari Partner Center sebelum koneksi TikTok.');
+        }
+
+        return rtrim(
+            $baseUrl,
+            '/'
         ) . '?' . http_build_query([
-                'service_id' => config('services.tiktok.service_id'),
-                'state' => csrf_token(),
-            ]);
+            'service_id' => $serviceId,
+            'state' => csrf_token(),
+        ]);
     }
 
 

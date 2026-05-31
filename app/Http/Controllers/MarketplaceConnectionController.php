@@ -75,7 +75,9 @@ class MarketplaceConnectionController extends Controller
         );
         $tokenData = $response->json()['data'] ?? null;
         dd($tokenData);
-        dd($tokenData);
+        dd(config('services.tiktok.app_key'));
+        dd(config('services.tiktok.app_secret'));
+        dd($request->code);
         /*
         |--------------------------------------------------------------------------
         | Ambil Data Shop

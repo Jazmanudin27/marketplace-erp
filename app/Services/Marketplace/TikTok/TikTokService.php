@@ -104,7 +104,7 @@ class TikTokService
             'shop_cipher' => $account->shop_cipher,
         ];
 
-        $params['sign'] = $this->generateSign(
+        $params['sign'] = $this->generateProductSign(
             $path,
             $params
         );
@@ -139,5 +139,24 @@ class TikTokService
         //     'status' => $response->status(),
         //     'json' => $response->json(),
         // ];
+    }
+
+    protected function generateProductSign(string $path, array $params): string
+    {
+        unset($params['sign']);
+
+        ksort($params);
+
+        $secret = config('services.tiktok.app_secret');
+
+        $string = $secret . $path;
+
+        foreach ($params as $key => $value) {
+            $string .= $key . $value;
+        }
+
+        $string .= $secret;
+
+        return hash('sha256', $string);
     }
 }

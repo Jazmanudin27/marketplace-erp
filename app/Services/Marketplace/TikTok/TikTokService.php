@@ -177,14 +177,18 @@ class TikTokService
         $body = [];
 
         // QUERY HARUS INCLUDE PAGE PARAM
+        $createFrom = (int) now()->subDays(7)->getTimestamp();
+        $createTo = (int) now()->getTimestamp();
+
         $query = [
             'app_key' => config('services.tiktok.app_key'),
             'timestamp' => time(),
             'shop_cipher' => $account->shop_cipher,
             'page_size' => 50,
             'page' => 1,
-            'create_time_ge' => now()->subDays(7)->timestamp,
-            'create_time_lt' => now()->timestamp,
+
+            'create_time_ge' => $createFrom,
+            'create_time_lt' => $createTo,
         ];
 
         $jsonBody = json_encode($body);

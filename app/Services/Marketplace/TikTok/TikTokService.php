@@ -128,11 +128,7 @@ class TikTokService
             $params,
             $body
         );
-        dd([
-            'string' => $string,
-            'sign' => $params['sign'],
-            'body' => $body,
-        ]);
+       
         $response = Http::withHeaders([
             'x-tts-access-token' => $account->access_token,
             'Content-Type' => 'application/json',

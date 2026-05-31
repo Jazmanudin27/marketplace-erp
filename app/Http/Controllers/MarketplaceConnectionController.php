@@ -116,12 +116,6 @@ class MarketplaceConnectionController extends Controller
 
             $companyId = $state['company_id'] ?? null;
 
-            dd([
-                'companyId' => $companyId,
-                'shopId' => $shopId,
-                'shop' => $shop,
-            ]);
-
             /*
             |--------------------------------------------------------------------------
             | COMPANY ID
@@ -150,10 +144,7 @@ class MarketplaceConnectionController extends Controller
                     'shop_cipher' => $shopId,
                     'access_token' => $tokenData['access_token'],
                     'refresh_token' => $tokenData['refresh_token'],
-                    'expired_at' => date(
-                        'Y-m-d H:i:s',
-                        $tokenData['access_token_expire_in']
-                    ),
+                    'expired_at' => $tokenData['access_token_expire_in']
                 ]
             );
 

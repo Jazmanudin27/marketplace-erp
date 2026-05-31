@@ -176,32 +176,32 @@ class TikTokService
         // BODY KOSONG
         $body = [];
 
-        // QUERY HARUS INCLUDE PAGE PARAM
-        $createFrom = (int) now()->subDays(7)->getTimestamp();
-        $createTo = (int) now()->getTimestamp();
-
         $query = [
             'app_key' => config('services.tiktok.app_key'),
             'timestamp' => time(),
             'shop_cipher' => $account->shop_cipher,
             'page_size' => 50,
             'page' => 1,
-
-            'create_time_ge' => $createFrom,
-            'create_time_lt' => $createTo,
+            'create_time_ge' => (int) now()->subDays(7)->timestamp,
+            'create_time_lt' => (int) now()->timestamp,
         ];
-
         $jsonBody = json_encode($body);
 
         $query['sign'] = $this->generateSignOrder($path, $query, $jsonBody);
+
+        // 🔥 MANUAL BUILD QUERY (IMPORTANT)
+        $queryString = '';
+        foreach ($query as $key => $value) {
+            $queryString .= $key . '=' . $value . '&';
+        }
+        $queryString = rtrim($queryString, '&');
 
         $response = Http::withHeaders([
             'x-tts-access-token' => $account->access_token,
             'Content-Type' => 'application/json',
         ])
             ->withBody($jsonBody, 'application/json')
-            ->post($this->baseUrlOrder . $path . '?' . http_build_query($query));
-
+            ->post($this->baseUrlOrder . $path . '?' . $queryString);
         $result = $response->json();
 
         dd([

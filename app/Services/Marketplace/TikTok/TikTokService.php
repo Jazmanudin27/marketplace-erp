@@ -50,7 +50,7 @@ class TikTokService
 
     public function getShopInfo($accessToken)
     {
-        $path = '/seller/202309/shops';
+        $path = '/authorization/202309/shops';
 
         $params = [
             'app_key' => config('services.tiktok.app_key'),

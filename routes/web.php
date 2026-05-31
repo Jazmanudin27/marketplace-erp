@@ -37,56 +37,9 @@ Route::middleware(['auth', \App\Http\Middleware\CompanyMiddleware::class])->grou
         Route::get('/accounts', [MarketplaceConnectionController::class, 'index'])->name('accounts');
         Route::get('/accounts/{account}', [MarketplaceConnectionController::class, 'show'])->name('show');
         Route::post('/connect', [MarketplaceConnectionController::class, 'connect'])->name('connect');
-        Route::get('/callback', [MarketplaceConnectionController::class, 'callback'])
-            ->name('callback')
-            ->withoutMiddleware(['auth', \App\Http\Middleware\CompanyMiddleware::class]);
+        Route::get('/callback', [MarketplaceConnectionController::class, 'callback'])->name('callback');
         Route::delete('/accounts/{account}', [MarketplaceConnectionController::class, 'disconnect'])->name('disconnect');
     });
-});
-Route::get('/test-tiktok-shops', function () {
-
-    $appKey = "6k51f66j8f7ki";
-    $appSecret = "07ae917200c1af2fdc6fd6d7d39bc38f418bdbd1";
-
-    $timestamp = time();
-    $path = "/authorization/202309/shops";
-
-    $params = [
-        'app_key' => $appKey,
-        'timestamp' => $timestamp,
-    ];
-
-    ksort($params);
-
-    $baseString = $appSecret . $path;
-
-    foreach ($params as $k => $v) {
-        $baseString .= $k . $v;
-    }
-
-    $baseString .= $appSecret;
-
-    $sign = hash_hmac('sha256', $baseString, $appSecret);
-
-    $accessToken = session('tiktok_token');
-
-    $response = Http::withHeaders([
-        'x-tts-access-token' => $accessToken,
-    ])->get('https://open-api.tiktokglobalshop.com/authorization/202309/shops', [
-        'app_key' => $appKey,
-        'timestamp' => $timestamp,
-        'sign' => $sign,
-    ]);
-
-    dd([
-        'ACCESS_TOKEN' => $accessToken,
-        'TIMESTAMP' => $timestamp,
-        'SIGN' => $sign,
-        'BASE_STRING' => $baseString,
-        'STATUS' => $response->status(),
-        'RESPONSE_BODY' => $response->body(),
-        'RESPONSE_JSON' => $response->json(),
-    ]);
 });
 
 Route::get('/callback/tiktok', [MarketplaceConnectionController::class, 'callback'])

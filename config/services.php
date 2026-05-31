@@ -59,20 +59,8 @@ return [
         'app_key' => env('TIKTOK_APP_KEY'),
         'app_secret' => env('TIKTOK_APP_SECRET'),
         'redirect_url' => env('TIKTOK_REDIRECT_URL'),
-        'auth_base_url' => env('TIKTOK_AUTH_BASE_URL', 'https://services.tiktokshop.com/open/authorize'),
-        'service_id' => env('TIKTOK_SERVICE_ID'),
         'host' => env('TIKTOK_HOST', 'https://open-api.tiktokglobalshop.com'),
     ],
 
-    'lazada' => [
-
-        'client_id' => env('LAZADA_CLIENT_ID'),
-
-        'client_secret' => env('LAZADA_CLIENT_SECRET'),
-
-        'redirect_url' => env('LAZADA_REDIRECT_URL'),
-
-        'region' => env('LAZADA_REGION', 'id'),
-    ],
 
 ];

@@ -25,8 +25,8 @@ class TikTokService
     {
         $state = base64_encode(json_encode([
             'company_id' => Auth::user()->company_id,
-            'platform'   => 'tiktok',
-            'time'       => time(),
+            'platform' => 'tiktok',
+            'time' => time(),
         ]));
 
         return sprintf(
@@ -68,10 +68,10 @@ class TikTokService
         $path = '/api/v2/token/get';
 
         $params = [
-            'app_key'   => $this->appKey,
-            'app_secret'=> $this->appSecret,
+            'app_key' => $this->appKey,
+            'app_secret' => $this->appSecret,
             'auth_code' => $request['code'],
-            'grant_type'=> 'authorized_code',
+            'grant_type' => 'authorized_code',
         ];
 
         $response = Http::post(
@@ -96,12 +96,12 @@ class TikTokService
     /**
      * Ambil shop_id
      */
-    public function getShopInfo(string $accessToken): ?array
+    public function getShopInfo(string $accessToken)
     {
-        $path = '/authorization/202309/shops';
+        $path = '/authorization/202309/shop';
 
         $params = [
-            'app_key'   => $this->appKey,
+            'app_key' => $this->appKey,
             'timestamp' => time(),
         ];
 
@@ -109,20 +109,11 @@ class TikTokService
 
         $response = Http::withHeaders([
             'x-tts-access-token' => $accessToken,
-            'Content-Type'       => 'application/json',
         ])->get(
-            $this->baseUrl . $path,
-            $params
-        );
+                $this->baseUrl . $path,
+                $params
+            );
 
-        $json = $response->json();
-
-        if (
-            isset($json['data']['shops'][0])
-        ) {
-            return $json['data']['shops'][0];
-        }
-
-        return null;
+        dd($response->json());
     }
 }

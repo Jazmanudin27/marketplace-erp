@@ -103,6 +103,21 @@ class TikTokService
             'page_size' => 100,
             'shop_cipher' => $account->shop_cipher,
         ];
+        $secret = config('services.tiktok.app_secret');
+
+        $tmp = $params;
+
+        unset($tmp['sign']);
+
+        ksort($tmp);
+
+        $string = $secret . $path;
+
+        foreach ($tmp as $key => $value) {
+            $string .= $key . $value;
+        }
+
+        $string .= $secret;
 
         $body = [
             'status' => 'ALL',
@@ -113,7 +128,11 @@ class TikTokService
             $params,
             $body
         );
-
+        dd([
+            'string' => $string,
+            'sign' => $params['sign'],
+            'body' => $body,
+        ]);
         $response = Http::withHeaders([
             'x-tts-access-token' => $account->access_token,
             'Content-Type' => 'application/json',

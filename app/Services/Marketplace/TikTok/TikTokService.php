@@ -47,6 +47,7 @@ class TikTokService
         return $response->json()['data'] ?? null;
     }
 
+
     public function getShopInfo($accessToken)
     {
         $response = Http::withHeaders([

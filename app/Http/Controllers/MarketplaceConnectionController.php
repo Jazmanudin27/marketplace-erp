@@ -80,15 +80,17 @@ class MarketplaceConnectionController extends Controller
             }
 
             $shop = $driver->getShopInfo($tokenData['access_token']);
+            $shopId = $shop['shop_id'] ?? $shop['shop_cipher'] ?? $shop['id'] ?? null;
 
             MarketplaceAccount::updateOrCreate(
                 [
                     'company_id' => Auth::user()->company_id,
                     'platform' => $platform,
-                    'shop_id' => $shop['shop_id'] ?? null,
+                    'shop_id' => $shopId,
                 ],
                 [
                     'shop_name' => $shop['shop_name'] ?? null,
+                    'shop_cipher' => $shop['shop_cipher'] ?? null,
                     'access_token' => $tokenData['access_token'],
                     'refresh_token' => $tokenData['refresh_token'] ?? null,
                     'expired_at' => now()->addSeconds($tokenData['expires_in'] ?? 86400),

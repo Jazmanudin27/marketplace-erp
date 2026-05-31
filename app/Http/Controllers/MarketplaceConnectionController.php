@@ -73,17 +73,17 @@ class MarketplaceConnectionController extends Controller
                 'grant_type' => 'authorized_code',
             ]
         );
-        $tokenData = $response->json()['data'] ?? null;
-        dd($tokenData);
-        dd(config('services.tiktok.app_key'));
-        dd(config('services.tiktok.app_secret'));
-        dd($request->code);
+
+        dd([
+            'status' => $response->status(),
+            'json' => $response->json(),
+            'body' => $response->body(),
+        ]);
         /*
         |--------------------------------------------------------------------------
         | Ambil Data Shop
         |--------------------------------------------------------------------------
         */
-        $shopInfo = $driver->getShopInfo($tokenData['access_token']);
 
         $shop = $shopInfo['shops'][0] ?? null;
 

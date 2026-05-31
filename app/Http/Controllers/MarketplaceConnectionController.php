@@ -74,10 +74,18 @@ class MarketplaceConnectionController extends Controller
             ]
         );
 
+        $data = $response->json();
+
+        if (($data['code'] ?? 1) !== 0) {
+            dd($data);
+        }
+
+        $tokenData = $data['data'];
         dd([
             'status' => $response->status(),
             'json' => $response->json(),
             'body' => $response->body(),
+            'tokenData' => $tokenData,
         ]);
         /*
         |--------------------------------------------------------------------------

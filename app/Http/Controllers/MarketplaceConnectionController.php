@@ -10,19 +10,23 @@ use Illuminate\Support\Facades\Http;
 
 class MarketplaceConnectionController extends Controller
 {
+
     public function index()
     {
-        $accounts = MarketplaceAccount::where('company_id', Auth::user()->company_id)
-            ->latest()
-            ->get();
+        $company = Auth::user()->company;
+        $accounts = $company->marketplaceAccounts()->get();
 
-        return view('marketplace.accounts.index', compact('accounts'));
+        return view('marketplace.accounts', compact('accounts', 'company'));
     }
+
 
     public function show(MarketplaceAccount $account)
     {
-        return view('marketplace.accounts.show', compact('account'));
+        $this->authorize('view', $account);
+
+        return view('marketplace.account-detail', compact('account'));
     }
+
 
     /**
      * Redirect ke marketplace OAuth

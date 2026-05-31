@@ -213,12 +213,8 @@ class MarketplaceConnectionController extends Controller
 
         $serviceId = config('services.tiktok.service_id');
 
-        if (!$serviceId && str_contains($baseUrl, 'services.tiktokshop.com')) {
-            $serviceId = '7431458374265161478';
-        }
-
         if (!$serviceId) {
-            throw new \RuntimeException('TIKTOK_SERVICE_ID belum diisi. Isi service_id dari Partner Center sebelum koneksi TikTok.');
+            throw new \RuntimeException('TIKTOK_SERVICE_ID belum diisi atau belum sesuai market. Isi service_id dari Partner Center yang benar untuk region app Anda.');
         }
 
         return rtrim(

@@ -171,11 +171,11 @@ class TikTokService
 
     public function getOrders($account)
     {
-        $path = '/order/202309/orders/search';
-
         $body = [
             'page_size' => 50,
         ];
+
+        $path = '/order/202309/orders/search';
 
         $query = [
             'app_key' => config('services.tiktok.app_key'),
@@ -205,6 +205,10 @@ class TikTokService
             ?? $result['data']['list']
             ?? [];
     }
+
+    /**
+     * SIGN TikTok Shop (WAJIB sesuai format API)
+     */
     protected function generateSignOrder(string $path, array $query, string $jsonBody): string
     {
         $secret = config('services.tiktok.app_secret');

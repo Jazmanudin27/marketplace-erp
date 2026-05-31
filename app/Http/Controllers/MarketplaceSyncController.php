@@ -95,10 +95,16 @@ class MarketplaceSyncController extends Controller
 
             $rawOrders = $service->getOrders($account);
 
-            dd($rawOrders);
             $syncedCount = 0;
             $skippedCount = 0;
-
+            dd([
+                'orders_only' =>
+                    $rawOrders['orders']
+                    ?? $rawOrders['order_list']
+                    ?? $rawOrders['list']
+                    ?? $rawOrders['data']['orders']
+                    ?? $rawOrders,
+            ]);
             foreach (is_array($rawOrders) ? $rawOrders : [] as $rawOrder) {
                 try {
                     $orderData = $this->resolveOrderPayload($service, $account, $rawOrder);

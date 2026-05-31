@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Http;
 class TikTokService
 {
     protected $baseUrl = 'https://auth.tiktok-shops.com/api/v2';
-
+    protected string $baseUrlOrder = 'https://open-api.tiktokglobalshop.com';
     public function getAuthorizationUrl(array $params = []): string
     {
         $appKey = config('services.tiktok.app_key');
@@ -171,58 +171,59 @@ class TikTokService
 
     public function getOrders($account)
     {
-        $response = $this->requestAccessTokenOrder(
-            '/order/202309/orders/search',
-            [
-                'page_size' => 50,
-                'shop_cipher' => $account->shop_cipher,
-            ],
-            $account->access_token
-        );
-        $data = $response['data'] ?? $response;
-
-        return $data['orders']
-            ?? $data['order_list']
-            ?? $data['list']
-            ?? [];
-    }
-
-    protected function requestAccessTokenOrder(string $path, array $body, string $accessToken): array
-    {
-        $params = [
-            'app_key' => config('services.tiktok.app_key'),
-            'timestamp' => time(),
-            'shop_cipher' => $body['shop_cipher'] ?? null,
+        $body = [
+            'page_size' => 50,
         ];
 
-        $params = array_filter($params, static fn($value) => $value !== null && $value !== '');
+        $path = '/order/202309/orders/search';
 
-        $params['sign'] = $this->generateProductSign(
-            $path,
-            $params,
-            $body
-        );
+        $query = [
+            'app_key' => config('services.tiktok.app_key'),
+            'timestamp' => time(),
+            'shop_cipher' => $account->shop_cipher,
+        ];
+
+        $jsonBody = json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        $query['sign'] = $this->generateSignOrder($path, $query, $jsonBody);
 
         $response = Http::withHeaders([
-            'x-tts-access-token' => $accessToken,
+            'x-tts-access-token' => $account->access_token,
             'Content-Type' => 'application/json',
-        ])->post(
-                'https://open-api.tiktokglobalshop.com' . $path . '?' . http_build_query($params),
-                $body
-            );
-        dd([
-            'url' => 'https://open-api.tiktokglobalshop.com' . $path,
-            'query_params' => $params,
-            'body' => $body,
-        ]);
+        ])
+            ->withBody($jsonBody, 'application/json')
+            ->post($this->baseUrlOrder . $path . '?' . http_build_query($query));
+
         $result = $response->json();
 
         if (($result['code'] ?? -1) !== 0) {
-            throw new \Exception(
-                $result['message'] ?? 'Gagal mengambil data TikTok'
-            );
+            throw new \Exception($result['message'] ?? 'Gagal mengambil orders TikTok');
         }
 
-        return $result;
+        return $result['data']['orders']
+            ?? $result['data']['order_list']
+            ?? $result['data']['list']
+            ?? [];
+    }
+
+    /**
+     * SIGN TikTok Shop (WAJIB sesuai format API)
+     */
+    protected function generateSignOrder(string $path, array $query, string $jsonBody): string
+    {
+        $secret = config('services.tiktok.app_secret');
+
+        ksort($query);
+
+        $string = $secret . $path;
+
+        foreach ($query as $key => $value) {
+            $string .= $key . $value;
+        }
+
+        $string .= $jsonBody;
+        $string .= $secret;
+
+        return hash_hmac('sha256', $string, $secret);
     }
 }

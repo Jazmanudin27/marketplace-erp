@@ -60,12 +60,9 @@ class MarketplaceConnectionController extends Controller
 {
     try {
 
-        $platform = 'tiktok';
+        $manager = new MarketplaceManager();
 
-        dd([
-            'request' => $request->all(),
-            'platform' => $platform
-        ]);
+        dd($manager);
 
     } catch (\Throwable $e) {
 

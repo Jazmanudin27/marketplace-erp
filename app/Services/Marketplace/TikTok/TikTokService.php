@@ -173,8 +173,10 @@ class TikTokService
     {
         $path = '/order/202309/orders/search';
 
-        // BODY KOSONG
-        $body = [];
+        $body = [
+            'create_time_ge' => (int) now()->subDays(30)->timestamp,
+            'create_time_lt' => (int) now()->timestamp,
+        ];
 
         $query = [
             'app_key' => config('services.tiktok.app_key'),
@@ -183,9 +185,6 @@ class TikTokService
 
             'page_size' => 50,
             'page' => 1,
-
-            'create_time_ge' => (int) now()->subDays(30)->timestamp,
-            'create_time_lt' => (int) now()->timestamp,
 
             'order_status' => 'ALL', // 🔥 penting
         ];

@@ -72,11 +72,6 @@ class MarketplaceConnectionController extends Controller
             */
             $tokenData = $driver->getAccessToken($request->all());
 
-            if (!$tokenData || empty($tokenData['access_token'])) {
-                return redirect()
-                    ->route('marketplace.accounts')
-                    ->with('error', 'Gagal mendapatkan Access Token TikTok');
-            }
 
             /*
             |--------------------------------------------------------------------------
@@ -87,11 +82,6 @@ class MarketplaceConnectionController extends Controller
 
             $shop = $shopInfo['shops'][0] ?? null;
 
-            if (!$shop) {
-                return redirect()
-                    ->route('marketplace.accounts')
-                    ->with('error', 'Data toko TikTok tidak ditemukan');
-            }
 
             $shopId = $shop['id'];
 

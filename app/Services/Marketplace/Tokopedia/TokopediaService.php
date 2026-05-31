@@ -215,4 +215,18 @@ class TokopediaService implements MarketplaceInterface
 
         return $data;
     }
+
+    /**
+     * Tokopedia does not support the generic redirect OAuth in this implementation.
+     * Provide explicit message for callers.
+     */
+    public function getAuthorizationUrl(array $params = []): string
+    {
+        throw new \Exception('Tokopedia authorization via redirect is not supported in this flow.');
+    }
+
+    public function getAuthUrl(array $params = []): string
+    {
+        return $this->getAuthorizationUrl($params);
+    }
 }

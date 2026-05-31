@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Marketplace;
+namespace App\Services\Marketplace\TikTok;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
@@ -9,19 +9,30 @@ class TikTokService
 {
     protected $baseUrl = 'https://auth.tiktok-shops.com/api/v2';
 
-    public function getAuthUrl()
+    public function getAuthorizationUrl(array $params = []): string
     {
         $appKey = config('services.tiktok.app_key');
 
         $redirect = urlencode(route('marketplace.callback'));
 
         $state = base64_encode(json_encode([
-            'company_id' => Auth::user()->company_id,
+            'company_id' => Auth::user()?->company_id,
             'platform' => 'tiktok',
-            'time' => time()
+            'time' => time(),
         ]));
 
         return "https://auth.tiktok-shops.com/oauth/authorize?app_key={$appKey}&redirect_uri={$redirect}&state={$state}";
+    }
+
+    public function getAuthUrl(array $params = []): string
+    {
+        return $this->getAuthorizationUrl($params);
+    }
+
+    public function exchangeCode(string $code): array
+    {
+        $data = $this->getAccessToken(['code' => $code]);
+        return $data ? (array) $data : [];
     }
 
     public function getAccessToken($params)

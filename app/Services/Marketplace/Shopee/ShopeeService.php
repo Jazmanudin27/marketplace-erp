@@ -543,4 +543,18 @@ class ShopeeService implements MarketplaceInterface
 
         return $tokenData;
     }
+
+    /**
+     * Shopee partner flow does not use a simple redirect OAuth URL here.
+     * Provide explicit exception to indicate unsupported operation.
+     */
+    public function getAuthorizationUrl(array $params = []): string
+    {
+        throw new \Exception('Shopee authorization via redirect is not supported in this flow.');
+    }
+
+    public function getAuthUrl(array $params = []): string
+    {
+        return $this->getAuthorizationUrl($params);
+    }
 }

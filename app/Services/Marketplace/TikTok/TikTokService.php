@@ -182,8 +182,6 @@ class TikTokService
             'shop_cipher' => $account->shop_cipher,
             'page_size' => 50,
             'page' => 1,
-            'create_time_ge' => (int) now()->subDays(7)->timestamp,
-            'create_time_lt' => (int) now()->timestamp,
         ];
         $jsonBody = json_encode($body);
 

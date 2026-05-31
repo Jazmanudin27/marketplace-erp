@@ -62,12 +62,6 @@ class MarketplaceConnectionController extends Controller
 
             $platform = 'tiktok';
 
-            if (!$request->filled('code')) {
-                return redirect()
-                    ->route('marketplace.accounts')
-                    ->with('error', 'Authorization code tidak ditemukan dari TikTok');
-            }
-
             $manager = new MarketplaceManager();
             $driver = $manager->driver($platform);
 
@@ -143,9 +137,9 @@ class MarketplaceConnectionController extends Controller
             //     ]
             // );
 
-            return redirect()
-                ->route('marketplace.accounts')
-                ->with('success', 'TikTok Shop berhasil terhubung');
+            // return redirect()
+            //     ->route('marketplace.accounts')
+            //     ->with('success', 'TikTok Shop berhasil terhubung');
 
         } catch (\Throwable $e) {
 

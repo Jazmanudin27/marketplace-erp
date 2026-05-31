@@ -98,7 +98,7 @@ class TikTokService
      */
     public function getShopInfo(string $accessToken)
     {
-        $path = '/authorization/202309/shop';
+        $path = '/authorization/202309/shops';
 
         $params = [
             'app_key' => $this->appKey,
@@ -109,11 +109,17 @@ class TikTokService
 
         $response = Http::withHeaders([
             'x-tts-access-token' => $accessToken,
+            'Content-Type' => 'application/json',
         ])->get(
                 $this->baseUrl . $path,
                 $params
             );
 
-        dd($response->json());
+        dd([
+            'url' => $this->baseUrl . $path,
+            'status' => $response->status(),
+            'body' => $response->json(),
+            'raw' => $response->body(),
+        ]);
     }
 }

@@ -58,72 +58,112 @@ class MarketplaceConnectionController extends Controller
      */
     public function callback(Request $request)
     {
+        try {
 
-        $platform = 'tiktok';
+            $platform = 'tiktok';
 
-        $manager = new MarketplaceManager();
-        $driver = $manager->driver($platform);
+            $manager = new MarketplaceManager();
+            $driver = $manager->driver($platform);
 
-        $response = Http::get(
-            'https://auth.tiktok-shops.com/api/v2/token/get',
-            [
-                'app_key' => config('services.tiktok.app_key'),
-                'app_secret' => config('services.tiktok.app_secret'),
-                'auth_code' => $request->code,
-                'grant_type' => 'authorized_code',
-            ]
-        );
+            /*
+            |--------------------------------------------------------------------------
+            | GET TOKEN
+            |--------------------------------------------------------------------------
+            */
+            $response = Http::get(
+                'https://auth.tiktok-shops.com/api/v2/token/get',
+                [
+                    'app_key' => config('services.tiktok.app_key'),
+                    'app_secret' => config('services.tiktok.app_secret'),
+                    'auth_code' => $request->code,
+                    'grant_type' => 'authorized_code',
+                ]
+            );
 
-        $data = $response->json();
+            $data = $response->json();
 
-        if (($data['code'] ?? 1) !== 0) {
-            dd($data);
+            if (($data['code'] ?? 1) !== 0) {
+                return redirect()
+                    ->route('marketplace.accounts')
+                    ->with('error', $data['message'] ?? 'Gagal mendapatkan token TikTok');
+            }
+
+            $tokenData = $data['data'];
+
+            /*
+            |--------------------------------------------------------------------------
+            | GET SHOP
+            |--------------------------------------------------------------------------
+            */
+            $shopInfo = $driver->getShopInfo(
+                $tokenData['access_token']
+            );
+
+            $shop = $shopInfo['shops'][0] ?? null;
+
+            if (!$shop) {
+                dd([
+                    'shopInfo' => $shopInfo,
+                    'tokenData' => $tokenData,
+                ]);
+            }
+
+            $shopId = $shop['id'];
+
+            /*
+            |--------------------------------------------------------------------------
+            | COMPANY ID
+            |--------------------------------------------------------------------------
+            */
+            $state = json_decode(
+                base64_decode($request->state),
+                true
+            );
+
+            $companyId = $state['company_id'] ?? null;
+
+            dd([
+                'companyId' => $companyId,
+                'shopId' => $shopId,
+                'shop' => $shop,
+                'tokenData' => $tokenData,
+            ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | SAVE
+            |--------------------------------------------------------------------------
+            */
+            MarketplaceAccount::updateOrCreate(
+                [
+                    'company_id' => $companyId,
+                    'platform' => 'tiktok',
+                    'shop_id' => $shopId,
+                ],
+                [
+                    'shop_name' => $tokenData['seller_name'],
+                    'shop_cipher' => $shopId,
+                    'access_token' => $tokenData['access_token'],
+                    'refresh_token' => $tokenData['refresh_token'],
+                    'expired_at' => date(
+                        'Y-m-d H:i:s',
+                        $tokenData['access_token_expire_in']
+                    ),
+                ]
+            );
+
+            return redirect()
+                ->route('marketplace.accounts')
+                ->with('success', 'TikTok berhasil terhubung');
+
+        } catch (\Throwable $e) {
+
+            dd([
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
         }
-
-        $tokenData = $data['data'];
-        dd([
-            'status' => $response->status(),
-            'json' => $response->json(),
-            'body' => $response->body(),
-            'tokenData' => $tokenData,
-        ]);
-        /*
-        |--------------------------------------------------------------------------
-        | Ambil Data Shop
-        |--------------------------------------------------------------------------
-        */
-
-        $shop = $shopInfo['shops'][0] ?? null;
-
-
-        $shopId = $shop['id'];
-
-        /*
-        |--------------------------------------------------------------------------
-        | Simpan / Update Marketplace Account
-        |--------------------------------------------------------------------------
-        */
-
-        // MarketplaceAccount::updateOrCreate(
-        //     [
-        //         'company_id' => Auth::user()->company_id,
-        //         'platform' => 'tiktok',
-        //         'shop_id' => $shopId,
-        //     ],
-        //     [
-        //         'shop_name' => $tokenData['seller_name'] ?? 'TikTok Shop',
-        //         'shop_cipher' => $shopId, // API terbaru tidak mengembalikan shop_cipher
-        //         'access_token' => $tokenData['access_token'],
-        //         'refresh_token' => $tokenData['refresh_token'] ?? null,
-        //         'expired_at' => $tokenData['access_token_expire_in'] ?? null,
-        //     ]
-        // );
-
-        // return redirect()
-        //     ->route('marketplace.accounts')
-        //     ->with('success', 'TikTok Shop berhasil terhubung');
-
-
     }
     public function disconnect(MarketplaceAccount $account)
     {

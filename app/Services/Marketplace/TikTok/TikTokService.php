@@ -156,7 +156,10 @@ class TikTokService
         }
 
         $string .= $secret;
-
-        return hash('sha256', $string);
+        dd([
+            'string' => $string,
+            'sign' => $params['sign'],
+        ]);
+        // return hash('sha256', $string);
     }
 }

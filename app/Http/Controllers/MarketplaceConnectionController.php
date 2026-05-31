@@ -60,16 +60,16 @@ class MarketplaceConnectionController extends Controller
 {
     try {
 
-        dd($request->all());
+        $platform = 'tiktok';
+
+        dd([
+            'request' => $request->all(),
+            'platform' => $platform
+        ]);
 
     } catch (\Throwable $e) {
 
-        dd([
-            'message' => $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
-            'trace' => $e->getTraceAsString(),
-        ]);
+        dd($e->getMessage());
     }
 }
     public function disconnect(MarketplaceAccount $account)

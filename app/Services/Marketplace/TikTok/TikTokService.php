@@ -171,20 +171,22 @@ class TikTokService
 
     public function getOrders($account)
     {
-        $body = [
-            'page_size' => 50,
-            'page' => 1,
-        ];
-
         $path = '/order/202309/orders/search';
 
+        // BODY KOSONG
+        $body = [];
+
+        // QUERY HARUS INCLUDE PAGE PARAM
         $query = [
             'app_key' => config('services.tiktok.app_key'),
             'timestamp' => time(),
             'shop_cipher' => $account->shop_cipher,
+
+            'page_size' => 50,
+            'page' => 1,
         ];
 
-        $jsonBody = json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $jsonBody = json_encode($body);
 
         $query['sign'] = $this->generateSignOrder($path, $query, $jsonBody);
 

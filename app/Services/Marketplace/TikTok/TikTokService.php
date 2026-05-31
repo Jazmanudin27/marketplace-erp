@@ -172,9 +172,8 @@ class TikTokService
     public function getOrders($account)
     {
         $body = [
-            // TikTok Shop order API expects PascalCase PageSize and Page
-            'PageSize' => 50,
-            'Page' => 1,
+            'page_size' => 50,
+            'page' => 1,
         ];
 
         $path = '/order/202309/orders/search';

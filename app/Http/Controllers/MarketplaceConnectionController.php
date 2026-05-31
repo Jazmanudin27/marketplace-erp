@@ -58,7 +58,6 @@ class MarketplaceConnectionController extends Controller
      */
     public function callback(Request $request)
     {
-        try {
 
             $platform = 'tiktok';
 
@@ -131,12 +130,7 @@ class MarketplaceConnectionController extends Controller
             //     ->route('marketplace.accounts')
             //     ->with('success', 'TikTok Shop berhasil terhubung');
 
-        } catch (\Throwable $e) {
 
-            return redirect()
-                ->route('marketplace.accounts')
-                ->with('error', $e->getMessage());
-        }
     }
     public function disconnect(MarketplaceAccount $account)
     {

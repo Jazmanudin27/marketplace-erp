@@ -36,16 +36,18 @@ Route::middleware(['auth', \App\Http\Middleware\CompanyMiddleware::class])->grou
     Route::prefix('marketplace')->name('marketplace.')->group(function () {
         Route::get('/accounts', [MarketplaceConnectionController::class, 'index'])->name('accounts');
         Route::get('/accounts/{account}', [MarketplaceConnectionController::class, 'show'])->name('show');
+        Route::get('/accounts/{account}/products', [MarketplaceSyncController::class, 'products'])->name('products');
         Route::post('/connect', [MarketplaceConnectionController::class, 'connect'])->name('connect');
         Route::get('/callback', [MarketplaceConnectionController::class, 'callback'])->name('callback');
         Route::delete('/accounts/{account}', [MarketplaceConnectionController::class, 'disconnect'])->name('disconnect');
+        Route::get('/{id}/sync-products', [MarketplaceSyncController::class, 'syncProducts'])->name('sync-products');
     });
+
+
+    Route::get('/callback/tiktok', [MarketplaceConnectionController::class, 'callback'])
+        ->name('callback.tiktok');
+
 });
-
-Route::get('/callback/tiktok', [MarketplaceConnectionController::class, 'callback'])
-    ->name('callback.tiktok');
-
-Route::get('/marketplace/{id}/sync-products', [MarketplaceSyncController::class, 'syncProducts'])->name('marketplace.sync-products');
 
 // Webhook routes
 Route::post('/webhook/shopee', [WebhookController::class, 'shopee']);

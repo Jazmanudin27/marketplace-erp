@@ -97,14 +97,7 @@ class MarketplaceSyncController extends Controller
 
             $syncedCount = 0;
             $skippedCount = 0;
-            dd([
-                'orders_only' =>
-                    $rawOrders['orders']
-                    ?? $rawOrders['order_list']
-                    ?? $rawOrders['list']
-                    ?? $rawOrders['data']['orders']
-                    ?? $rawOrders,
-            ]);
+
             foreach (is_array($rawOrders) ? $rawOrders : [] as $rawOrder) {
                 try {
                     $orderData = $this->resolveOrderPayload($service, $account, $rawOrder);
@@ -114,7 +107,26 @@ class MarketplaceSyncController extends Controller
                         $skippedCount++;
                         continue;
                     }
-
+                    $orderDto = (object) [
+                        'marketplaceOrderId' => 'TEST-ORDER-001',
+                        'marketplace' => 'tiktok',
+                        'orderNumber' => 'INV-TEST-001',
+                        'customerName' => 'Jazman Test',
+                        'customerEmail' => 'test@example.com',
+                        'customerPhone' => '08123456789',
+                        'shippingAddress' => [
+                            'city' => 'Bandung',
+                            'address' => 'Jl. Test No 123'
+                        ],
+                        'subtotal' => 125000,
+                        'shippingFee' => 10000,
+                        'totalAmount' => 135000,
+                        'paymentMethod' => 'cod',
+                        'paymentStatus' => 'paid',
+                        'orderStatus' => 'delivered',
+                        'orderDate' => now(),
+                        'marketplaceData' => $orderData,
+                    ];
                     DB::transaction(function () use ($account, $orderDto, $orderData) {
                         $order = Order::updateOrCreate(
                             [

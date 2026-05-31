@@ -185,8 +185,6 @@ class TikTokService
 
             'page_size' => 50,
             'page' => 1,
-
-            'order_status' => 'ALL', // 🔥 penting
         ];
         $jsonBody = json_encode($body);
 

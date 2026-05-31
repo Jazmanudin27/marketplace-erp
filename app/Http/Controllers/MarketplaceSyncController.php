@@ -81,7 +81,7 @@ class MarketplaceSyncController extends Controller
         return view('marketplace.products', compact('account', 'products'));
     }
 
-    public function syncOrders($id): RedirectResponse
+   public function syncOrders($id): RedirectResponse
 {
     try {
         $account = MarketplaceAccount::findOrFail($id);
@@ -93,22 +93,80 @@ class MarketplaceSyncController extends Controller
             return back()->with('error', 'Platform ini belum support sync order');
         }
 
-        $rawOrders = $service->getOrders($account);
-
-        $orders = $rawOrders['orders']
-            ?? $rawOrders['order_list']
-            ?? $rawOrders['list']
-            ?? $rawOrders['data']['orders']
-            ?? [];
+        // 🔥 FAKE DATA ORDERS (untuk testing)
+        $rawOrders = [
+            [
+                'order_id' => 'MP-1001',
+                'order_number' => 'INV-1001',
+                'customer_name' => 'Budi Santoso',
+                'customer_email' => 'budi@mail.com',
+                'customer_phone' => '08123456789',
+                'subtotal' => 150000,
+                'shipping_fee' => 10000,
+                'total_amount' => 160000,
+                'payment_method' => 'COD',
+                'payment_status' => 'paid',
+                'order_status' => 'processing',
+                'order_date' => now()->subDay()->toDateTimeString(),
+                'shipping_address' => [
+                    'address' => 'Jl. Merdeka No 10',
+                    'city' => 'Bandung',
+                ],
+                'items' => [
+                    [
+                        'marketplace_product_id' => 'P-001',
+                        'name' => 'Kaos Polos',
+                        'qty' => 2,
+                        'price' => 50000,
+                        'subtotal' => 100000,
+                    ],
+                    [
+                        'marketplace_product_id' => 'P-002',
+                        'name' => 'Topi',
+                        'qty' => 1,
+                        'price' => 50000,
+                        'subtotal' => 50000,
+                    ],
+                ],
+            ],
+            [
+                'order_id' => 'MP-1002',
+                'order_number' => 'INV-1002',
+                'customer_name' => 'Siti Aminah',
+                'customer_email' => 'siti@mail.com',
+                'customer_phone' => '082233445566',
+                'subtotal' => 80000,
+                'shipping_fee' => 12000,
+                'total_amount' => 92000,
+                'payment_method' => 'Transfer',
+                'payment_status' => 'pending',
+                'order_status' => 'pending',
+                'order_date' => now()->toDateTimeString(),
+                'shipping_address' => [
+                    'address' => 'Jl. Asia Afrika',
+                    'city' => 'Jakarta',
+                ],
+                'items' => [
+                    [
+                        'marketplace_product_id' => 'P-003',
+                        'name' => 'Kemeja',
+                        'qty' => 1,
+                        'price' => 80000,
+                        'subtotal' => 80000,
+                    ],
+                ],
+            ],
+        ];
 
         $syncedCount = 0;
         $skippedCount = 0;
 
-        foreach ($orders as $rawOrder) {
+        foreach ($rawOrders as $rawOrder) {
 
             try {
-                // 🔥 ambil data real dari API
-                $orderData = $this->resolveOrderPayload($service, $account, $rawOrder);
+
+                // 🔥 langsung pakai data fake (tidak perlu resolve API)
+                $orderData = $rawOrder;
 
                 $orderDto = $this->buildOrderDto($account->platform, $orderData);
 
@@ -142,8 +200,8 @@ class MarketplaceSyncController extends Controller
                         ]
                     );
 
-                    // 🔥 items sync (lebih aman)
-                    foreach ($this->mapOrderItems($orderData) as $itemData) {
+                    // 🔥 items sync dari fake data
+                    foreach (($orderData['items'] ?? []) as $itemData) {
                         $order->items()->updateOrCreate(
                             [
                                 'marketplace_product_id' => $itemData['marketplace_product_id'] ?? null,
@@ -158,8 +216,7 @@ class MarketplaceSyncController extends Controller
             } catch (\Throwable $e) {
                 $skippedCount++;
 
-                Log::warning('Order sync failed', [
-                    'platform' => $account->platform,
+                Log::warning('Order sync failed (FAKE)', [
                     'message' => $e->getMessage(),
                 ]);
             }
@@ -167,7 +224,7 @@ class MarketplaceSyncController extends Controller
 
         return redirect()
             ->route('marketplace.orders', $account)
-            ->with('success', "Sync selesai. Berhasil: {$syncedCount}, dilewati: {$skippedCount}");
+            ->with('success', "Sync fake selesai. Berhasil: {$syncedCount}, dilewati: {$skippedCount}");
 
     } catch (\Throwable $e) {
         return back()->with('error', $e->getMessage());

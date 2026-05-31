@@ -3,7 +3,6 @@
 namespace App\Services\Marketplace;
 
 use App\Services\Marketplace\Shopee\ShopeeService;
-use App\Services\Marketplace\TikTok\TikTokService;
 use App\Services\Marketplace\Tokopedia\TokopediaService;
 
 class MarketplaceManager

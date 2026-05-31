@@ -47,12 +47,5 @@ Route::get('/callback/tiktok', [MarketplaceConnectionController::class, 'callbac
 
 Route::get('/marketplace/{id}/sync-products', [MarketplaceSyncController::class, 'syncProducts'])->name('marketplace.sync-products');
 
-// Test routes (remove in production)
-Route::get('/test-shopee', function () {
-    $account = MarketplaceAccount::first();
-    $service = MarketplaceManager::driver('shopee');
-    return $service->getOrders($account);
-});
-
 // Webhook routes
 Route::post('/webhook/shopee', [WebhookController::class, 'shopee']);

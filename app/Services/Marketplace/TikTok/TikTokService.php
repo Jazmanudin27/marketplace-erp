@@ -7,119 +7,53 @@ use Illuminate\Support\Facades\Http;
 
 class TikTokService
 {
-    protected string $appKey;
-    protected string $appSecret;
+    protected $baseUrl = 'https://auth.tiktok-shops.com/api/v2';
 
-    protected string $baseUrl = 'https://open-api.tiktokglobalshop.com';
-
-    public function __construct()
+    public function getAuthorizationUrl(array $params = []): string
     {
-        $this->appKey = config('services.tiktok.app_key');
-        $this->appSecret = config('services.tiktok.app_secret');
-    }
+        $appKey = config('services.tiktok.app_key');
 
-    /**
-     * OAuth URL
-     */
-    public function getAuthUrl(): string
-    {
+        $redirect = urlencode(route('marketplace.callback'));
+
         $state = base64_encode(json_encode([
-            'company_id' => Auth::user()->company_id,
+            'company_id' => Auth::user()?->company_id,
             'platform' => 'tiktok',
             'time' => time(),
         ]));
 
-        return sprintf(
-            'https://services.tiktokshop.com/open/authorize?app_key=%s&state=%s',
-            $this->appKey,
-            $state
-        );
+        return "https://auth.tiktok-shops.com/oauth/authorize?app_key={$appKey}&redirect_uri={$redirect}&state={$state}";
     }
 
-    /**
-     * Signature TikTok
-     */
-    protected function sign(string $path, array $params): string
+    public function getAuthUrl(array $params = []): string
     {
-        unset($params['sign']);
-
-        ksort($params);
-
-        $baseString = $this->appSecret . $path;
-
-        foreach ($params as $key => $value) {
-            $baseString .= $key . $value;
-        }
-
-        $baseString .= $this->appSecret;
-
-        return hash_hmac(
-            'sha256',
-            $baseString,
-            $this->appSecret
-        );
+        return $this->getAuthorizationUrl($params);
     }
 
-    /**
-     * Tukar code jadi access token
-     */
-    public function getAccessToken(array $request): array
+    public function exchangeCode(string $code): array
     {
-        $path = '/api/v2/token/get';
+        $data = $this->getAccessToken(['code' => $code]);
+        return $data ? (array) $data : [];
+    }
 
-        $params = [
-            'app_key' => $this->appKey,
-            'app_secret' => $this->appSecret,
-            'auth_code' => $request['code'],
+    public function getAccessToken($params)
+    {
+        $response = Http::get($this->baseUrl . '/token/get', [
+            'app_key' => config('services.tiktok.app_key'),
+            'app_secret' => config('services.tiktok.app_secret'),
+            'auth_code' => $params['code'] ?? null,
             'grant_type' => 'authorized_code',
-        ];
+        ]);
 
-        $response = Http::post(
-            $this->baseUrl . $path,
-            $params
-        );
-
-        $json = $response->json();
-
-        if (
-            isset($json['data']) &&
-            isset($json['data']['access_token'])
-        ) {
-            return $json['data'];
-        }
-
-        throw new \Exception(
-            $json['message'] ?? 'Token TikTok gagal'
-        );
+        return $response->json()['data'] ?? null;
     }
 
-    /**
-     * Ambil shop_id
-     */
-    public function getShopInfo(string $accessToken)
+
+    public function getShopInfo($accessToken)
     {
-        $path = '/authorization/202309/shops';
-
-        $params = [
-            'app_key' => $this->appKey,
-            'timestamp' => time(),
-        ];
-
-        $params['sign'] = $this->sign($path, $params);
-
         $response = Http::withHeaders([
-            'x-tts-access-token' => $accessToken,
-            'Content-Type' => 'application/json',
-        ])->get(
-                $this->baseUrl . $path,
-                $params
-            );
+            'Access-Token' => $accessToken
+        ])->get($this->baseUrl . '/shop/get_shop');
 
-        dd([
-            'url' => $this->baseUrl . $path,
-            'status' => $response->status(),
-            'body' => $response->json(),
-            'raw' => $response->body(),
-        ]);
+        return $response->json()['data'] ?? null;
     }
 }

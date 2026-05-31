@@ -99,15 +99,13 @@ class MarketplaceConnectionController extends Controller
                 $tokenData['access_token']
             );
 
-            $shop = $shopInfo['data']['shops'][0] ?? null;
+            $shop = $shopInfo['data']['shops'][0];
 
             if (!$shop) {
                 return redirect()
                     ->route('marketplace.accounts')
                     ->with('error', 'Shop TikTok tidak ditemukan');
             }
-
-            $shopId = $shop['id'];
 
             $state = json_decode(
                 base64_decode($request->state),
@@ -133,21 +131,25 @@ class MarketplaceConnectionController extends Controller
             | SAVE
             |--------------------------------------------------------------------------
             */
+
+
             MarketplaceAccount::updateOrCreate(
                 [
                     'company_id' => $companyId,
                     'platform' => 'tiktok',
-                    'shop_id' => $shopId,
+                    'shop_id' => $shop['id'],
                 ],
                 [
-                    'shop_name' => $tokenData['seller_name'],
-                    'shop_cipher' => $shopId,
+                    'shop_name' => $shop['name'],
+                    'shop_cipher' => $shop['cipher'],
                     'access_token' => $tokenData['access_token'],
                     'refresh_token' => $tokenData['refresh_token'],
-                    'expired_at' => $tokenData['access_token_expire_in']
+                    'expired_at' => date(
+                        'Y-m-d H:i:s',
+                        $tokenData['access_token_expire_in']
+                    ),
                 ]
             );
-
             return redirect()
                 ->route('marketplace.accounts')
                 ->with('success', 'TikTok berhasil terhubung');

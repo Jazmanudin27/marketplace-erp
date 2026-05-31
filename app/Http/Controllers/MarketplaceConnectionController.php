@@ -57,14 +57,84 @@ class MarketplaceConnectionController extends Controller
      * Callback OAuth Shopee / TikTok
      */
     public function callback(Request $request)
-{
-    $manager = new MarketplaceManager();
-    $driver = $manager->driver('tiktok');
+    {
 
-    $tokenData = $driver->getAccessToken($request->all());
+        $platform = 'tiktok';
 
-    dd($tokenData);
-}
+        $manager = new MarketplaceManager();
+        $driver = $manager->driver($platform);
+
+        $response = Http::get(
+            'https://auth.tiktok-shops.com/api/v2/token/get',
+            [
+                'app_key' => config('services.tiktok.app_key'),
+                'app_secret' => config('services.tiktok.app_secret'),
+                'auth_code' => $request->code,
+                'grant_type' => 'authorized_code',
+            ]
+        );
+        $tokenData = $response->json()['data'] ?? null;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Ambil Data Shop
+        |--------------------------------------------------------------------------
+        */
+        $shopInfo = $driver->getShopInfo($tokenData['access_token']);
+
+        $shop = $shopInfo['shops'][0] ?? null;
+
+
+        $shopId = $shop['id'];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Simpan / Update Marketplace Account
+        |--------------------------------------------------------------------------
+        */
+        dd([
+            'auth_user' => Auth::user(),
+            'company_id' => Auth::user()->company_id ?? null,
+
+            'tokenData' => $tokenData,
+
+            'shopInfo' => $shopInfo,
+
+            'shop' => $shop,
+
+            'save_data' => [
+                'company_id' => Auth::user()->company_id ?? null,
+                'platform' => 'tiktok',
+                'shop_id' => $shopId,
+
+                'shop_name' => $tokenData['seller_name'] ?? 'TikTok Shop',
+                'shop_cipher' => $shopId,
+                'access_token' => $tokenData['access_token'],
+                'refresh_token' => $tokenData['refresh_token'] ?? null,
+                'expired_at' => $tokenData['access_token_expire_in'] ?? null,
+            ]
+        ]);
+        // MarketplaceAccount::updateOrCreate(
+        //     [
+        //         'company_id' => Auth::user()->company_id,
+        //         'platform' => 'tiktok',
+        //         'shop_id' => $shopId,
+        //     ],
+        //     [
+        //         'shop_name' => $tokenData['seller_name'] ?? 'TikTok Shop',
+        //         'shop_cipher' => $shopId, // API terbaru tidak mengembalikan shop_cipher
+        //         'access_token' => $tokenData['access_token'],
+        //         'refresh_token' => $tokenData['refresh_token'] ?? null,
+        //         'expired_at' => $tokenData['access_token_expire_in'] ?? null,
+        //     ]
+        // );
+
+        // return redirect()
+        //     ->route('marketplace.accounts')
+        //     ->with('success', 'TikTok Shop berhasil terhubung');
+
+
+    }
     public function disconnect(MarketplaceAccount $account)
     {
         $account->delete();

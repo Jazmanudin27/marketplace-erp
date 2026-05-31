@@ -16,8 +16,8 @@ class MarketplaceSyncController extends Controller
             $service = MarketplaceManager::driver($account->platform);
 
             $result = $service->getProducts($account);
-
-            return response()->json($result);
+            dd($result);
+            // return response()->json($result);
 
         } catch (\Throwable $e) {
             dd([

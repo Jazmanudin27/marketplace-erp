@@ -92,4 +92,31 @@ class TikTokService
             config('services.tiktok.app_secret')
         );
     }
+
+    public function getProducts($account)
+    {
+        $path = '/product/202309/products/search';
+
+        $params = [
+            'app_key' => config('services.tiktok.app_key'),
+            'timestamp' => time(),
+            'page_size' => 100,
+        ];
+
+        $params['sign'] = $this->generateSign($path, $params);
+
+        $response = Http::withHeaders([
+            'x-tts-access-token' => $account->access_token,
+            'Content-Type' => 'application/json',
+        ])->post(
+                'https://open-api.tiktokglobalshop.com' . $path .
+                '?' . http_build_query($params),
+                []
+            );
+
+        return [
+            'status' => $response->status(),
+            'json' => $response->json(),
+        ];
+    }
 }

@@ -100,14 +100,6 @@ class MarketplaceConnectionController extends Controller
             );
 
             $shop = $shopInfo['shops'][0] ?? null;
-
-            if (!$shop) {
-                dd([
-                    'shopInfo' => $shopInfo,
-                    'tokenData' => $tokenData,
-                ]);
-            }
-
             $shopId = $shop['id'];
 
             /*
@@ -121,13 +113,6 @@ class MarketplaceConnectionController extends Controller
             );
 
             $companyId = $state['company_id'] ?? null;
-
-            dd([
-                'companyId' => $companyId,
-                'shopId' => $shopId,
-                'shop' => $shop,
-                'tokenData' => $tokenData,
-            ]);
 
             /*
             |--------------------------------------------------------------------------

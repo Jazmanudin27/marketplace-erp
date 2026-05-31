@@ -57,81 +57,21 @@ class MarketplaceConnectionController extends Controller
      * Callback OAuth Shopee / TikTok
      */
     public function callback(Request $request)
-    {
+{
+    try {
 
-            $platform = 'tiktok';
+        dd($request->all());
 
-            $manager = new MarketplaceManager();
-            $driver = $manager->driver($platform);
+    } catch (\Throwable $e) {
 
-            /*
-            |--------------------------------------------------------------------------
-            | Ambil Access Token
-            |--------------------------------------------------------------------------
-            */
-            $tokenData = $driver->getAccessToken($request->all());
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Ambil Data Shop
-            |--------------------------------------------------------------------------
-            */
-            $shopInfo = $driver->getShopInfo($tokenData['access_token']);
-
-            $shop = $shopInfo['shops'][0] ?? null;
-
-
-            $shopId = $shop['id'];
-
-            /*
-            |--------------------------------------------------------------------------
-            | Simpan / Update Marketplace Account
-            |--------------------------------------------------------------------------
-            */
-            dd([
-                'auth_user' => Auth::user(),
-                'company_id' => Auth::user()->company_id ?? null,
-
-                'tokenData' => $tokenData,
-
-                'shopInfo' => $shopInfo,
-
-                'shop' => $shop,
-
-                'save_data' => [
-                    'company_id' => Auth::user()->company_id ?? null,
-                    'platform' => 'tiktok',
-                    'shop_id' => $shopId,
-
-                    'shop_name' => $tokenData['seller_name'] ?? 'TikTok Shop',
-                    'shop_cipher' => $shopId,
-                    'access_token' => $tokenData['access_token'],
-                    'refresh_token' => $tokenData['refresh_token'] ?? null,
-                    'expired_at' => $tokenData['access_token_expire_in'] ?? null,
-                ]
-            ]);
-            // MarketplaceAccount::updateOrCreate(
-            //     [
-            //         'company_id' => Auth::user()->company_id,
-            //         'platform' => 'tiktok',
-            //         'shop_id' => $shopId,
-            //     ],
-            //     [
-            //         'shop_name' => $tokenData['seller_name'] ?? 'TikTok Shop',
-            //         'shop_cipher' => $shopId, // API terbaru tidak mengembalikan shop_cipher
-            //         'access_token' => $tokenData['access_token'],
-            //         'refresh_token' => $tokenData['refresh_token'] ?? null,
-            //         'expired_at' => $tokenData['access_token_expire_in'] ?? null,
-            //     ]
-            // );
-
-            // return redirect()
-            //     ->route('marketplace.accounts')
-            //     ->with('success', 'TikTok Shop berhasil terhubung');
-
-
+        dd([
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString(),
+        ]);
     }
+}
     public function disconnect(MarketplaceAccount $account)
     {
         $account->delete();

@@ -108,7 +108,33 @@ class TikTokService
             $path,
             $params
         );
+$secret = config('services.tiktok.app_secret');
 
+    $tmp = $params;
+
+    unset($tmp['sign']);
+
+    ksort($tmp);
+
+    $string = $secret . $path;
+
+    foreach ($tmp as $key => $value) {
+        $string .= $key . $value;
+    }
+
+    $string .= $secret;
+
+    $generatedSign = hash_hmac(
+        'sha256',
+        $string,
+        $secret
+    );
+
+    dd([
+        'string' => $string,
+        'generated_sign' => $generatedSign,
+        'params' => $tmp,
+    ]);
         $body = [
             'status' => 'ALL',
         ];
@@ -156,10 +182,7 @@ class TikTokService
         }
 
         $string .= $secret;
-        dd([
-            'string' => $string,
-            'sign' => $params['sign'],
-        ]);
-        // return hash('sha256', $string);
+
+        return hash('sha256', $string);
     }
 }

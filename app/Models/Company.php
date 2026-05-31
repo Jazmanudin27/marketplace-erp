@@ -42,4 +42,9 @@ class Company extends Model
     {
         return $this->hasMany(MarketplaceAccount::class);
     }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
 }

@@ -37,10 +37,12 @@ Route::middleware(['auth', \App\Http\Middleware\CompanyMiddleware::class])->grou
         Route::get('/accounts', [MarketplaceConnectionController::class, 'index'])->name('accounts');
         Route::get('/accounts/{account}', [MarketplaceConnectionController::class, 'show'])->name('show');
         Route::get('/accounts/{account}/products', [MarketplaceSyncController::class, 'products'])->name('products');
+        Route::get('/accounts/{account}/orders', [MarketplaceSyncController::class, 'orders'])->name('orders');
         Route::post('/connect', [MarketplaceConnectionController::class, 'connect'])->name('connect');
         Route::get('/callback', [MarketplaceConnectionController::class, 'callback'])->name('callback');
         Route::delete('/accounts/{account}', [MarketplaceConnectionController::class, 'disconnect'])->name('disconnect');
         Route::get('/{id}/sync-products', [MarketplaceSyncController::class, 'syncProducts'])->name('sync-products');
+        Route::get('/{id}/sync-orders', [MarketplaceSyncController::class, 'syncOrders'])->name('sync-orders');
     });
 
 

@@ -62,6 +62,9 @@
                             <div class="mt-auto d-grid gap-2">
                                 <a href="{{ route('marketplace.show', $account) }}" class="btn btn-primary">Lihat Detail</a>
                                 <a href="{{ route('marketplace.products', $account) }}" class="btn btn-outline-success">Lihat Produk</a>
+                                @if (in_array($account->platform, ['shopee', 'tokopedia']))
+                                    <a href="{{ route('marketplace.orders', $account) }}" class="btn btn-outline-primary">Lihat Orders</a>
+                                @endif
                                 <form action="{{ route('marketplace.disconnect', $account) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin memutus koneksi?')">
                                     @csrf
                                     @method('DELETE')

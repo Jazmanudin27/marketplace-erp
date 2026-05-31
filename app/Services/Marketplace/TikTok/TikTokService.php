@@ -67,11 +67,6 @@ class TikTokService
                 $params
             );
 
-        dd(
-            $response->status(),
-            $response->json()
-        );
-
         return $response->json();
     }
 

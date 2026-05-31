@@ -53,58 +53,45 @@ class MarketplaceConnectionController extends Controller
         }
     }
 
-    /**
-     * Callback OAuth Shopee / TikTok
-     */
     public function callback(Request $request)
     {
         try {
-            $platform = 'tiktok';
 
             if (!$request->code) {
-                return redirect()->route('marketplace.accounts')
-                    ->with('error', 'Authorization code tidak ditemukan dari TikTok');
+                return redirect()
+                    ->route('marketplace.accounts')
+                    ->with(
+                        'error',
+                        'Authorization code tidak ditemukan'
+                    );
             }
+
+            $platform = 'tiktok';
 
             $manager = new MarketplaceManager();
+
             $driver = $manager->driver($platform);
 
-            $tokenData = $driver->getAccessToken($request->all());
+            $tokenData = $driver->getAccessToken(
+                $request->all()
+            );
 
-            if (!$tokenData) {
-                return redirect()->route('marketplace.accounts')
-                    ->with('error', 'Token gagal didapatkan');
-            }
+            $shop = $driver->getShopInfo(
+                $tokenData['access_token']
+            );
 
-            $shop = $driver->getShopInfo($tokenData['access_token']);
             dd([
-                'request' => $request->all(),
-                'tokenData' => $tokenData,
-                'shopInfo' => $shop,
+                'shop_id' => $shop['id'] ?? null,
+                'shop_cipher' => $shop['cipher'] ?? null,
+                'shop_name' => $shop['name'] ?? null,
+                'full_shop' => $shop,
             ]);
-            // $shopId = $shop['shop_id'] ?? $shop['shop_cipher'] ?? $shop['id'] ?? null;
-
-            // MarketplaceAccount::updateOrCreate(
-            //     [
-            //         'company_id' => Auth::user()->company_id,
-            //         'platform' => $platform,
-            //         'shop_id' => $shopId,
-            //     ],
-            //     [
-            //         'shop_name' => $shop['shop_name'] ?? null,
-            //         'shop_cipher' => $shop['shop_cipher'] ?? null,
-            //         'access_token' => $tokenData['access_token'],
-            //         'refresh_token' => $tokenData['refresh_token'] ?? null,
-            //         'expired_at' => now()->addSeconds($tokenData['expires_in'] ?? 86400),
-            //     ]
-            // );
-
-            // return redirect()->route('marketplace.accounts')
-            //     ->with('success', 'TikTok berhasil connect');
 
         } catch (\Exception $e) {
-            return redirect()->route('marketplace.accounts')
-                ->with('error', $e->getMessage());
+
+            dd([
+                'error' => $e->getMessage()
+            ]);
         }
     }
     public function disconnect(MarketplaceAccount $account)

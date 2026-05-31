@@ -51,9 +51,12 @@ class TikTokService
     public function getShopInfo($accessToken)
     {
         $response = Http::withHeaders([
-            'Access-Token' => $accessToken
-        ])->get($this->baseUrl . '/shop/get_shop');
+            'x-tts-access-token' => $accessToken,
+            'Content-Type' => 'application/json',
+        ])->get('https://open-api.tiktokglobalshop.com/seller/202309/shops');
 
-        return $response->json()['data'] ?? null;
+        dd($response->status(), $response->json());
+
+        return $response->json();
     }
 }

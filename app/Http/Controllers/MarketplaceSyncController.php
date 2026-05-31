@@ -201,6 +201,10 @@ class MarketplaceSyncController extends Controller
             }
         }
 
+        if ($account->platform === 'tiktok') {
+            $detail = $order;
+        }
+
         return array_merge($order, $detail);
     }
 
@@ -209,6 +213,7 @@ class MarketplaceSyncController extends Controller
         return match ($platform) {
             'shopee' => OrderDTO::fromShopee($orderData),
             'tokopedia' => OrderDTO::fromTokopedia($orderData),
+            'tiktok' => OrderDTO::fromTikTok($orderData),
             default => throw new \Exception('Sinkronisasi pesanan belum didukung untuk platform ini'),
         };
     }

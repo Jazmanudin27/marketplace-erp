@@ -168,4 +168,58 @@ class TikTokService
             $secret
         );
     }
+
+    public function getOrders($account)
+    {
+        $response = $this->request(
+            '/order/202309/orders/search',
+            [
+                'page_size' => 50,
+                'shop_cipher' => $account->shop_cipher,
+            ],
+            $account->access_token
+        );
+
+        $data = $response['data'] ?? $response;
+
+        return $data['orders']
+            ?? $data['order_list']
+            ?? $data['list']
+            ?? [];
+    }
+
+    protected function request(string $path, array $body, string $accessToken): array
+    {
+        $params = [
+            'app_key' => config('services.tiktok.app_key'),
+            'timestamp' => time(),
+            'shop_cipher' => $body['shop_cipher'] ?? null,
+        ];
+
+        $params = array_filter($params, static fn ($value) => $value !== null && $value !== '');
+
+        $params['sign'] = $this->generateProductSign(
+            $path,
+            $params,
+            $body
+        );
+
+        $response = Http::withHeaders([
+            'x-tts-access-token' => $accessToken,
+            'Content-Type' => 'application/json',
+        ])->post(
+            'https://open-api.tiktokglobalshop.com' . $path . '?' . http_build_query($params),
+            $body
+        );
+
+        $result = $response->json();
+
+        if (($result['code'] ?? -1) !== 0) {
+            throw new \Exception(
+                $result['message'] ?? 'Gagal mengambil data TikTok'
+            );
+        }
+
+        return $result;
+    }
 }

@@ -10,7 +10,7 @@
                 <p class="text-muted mb-0">Daftar pesanan untuk akun {{ $account->shop_name ?? ucfirst($account->platform) }} yang tersimpan di tabel orders.</p>
             </div>
             <div class="col-lg-4 text-lg-end">
-                @if (in_array($account->platform, ['shopee', 'tokopedia']))
+                @if (in_array($account->platform, ['shopee', 'tokopedia', 'tiktok']))
                     <a href="{{ route('marketplace.sync-orders', $account->id) }}" class="btn btn-primary me-2">Sync Pesanan</a>
                 @endif
                 <a href="{{ route('marketplace.show', $account) }}" class="btn btn-outline-primary">Detail Akun</a>
@@ -193,7 +193,7 @@
                 <div class="text-center py-5">
                     <h3 class="h5 fw-bold mb-2">Belum ada pesanan</h3>
                     <p class="text-muted mb-4">Klik sync pesanan untuk menarik order dari marketplace.</p>
-                    @if (in_array($account->platform, ['shopee', 'tokopedia']))
+                    @if (in_array($account->platform, ['shopee', 'tokopedia', 'tiktok']))
                         <a href="{{ route('marketplace.sync-orders', $account->id) }}" class="btn btn-primary">Sync Pesanan</a>
                     @else
                         <div class="alert alert-warning d-inline-block mb-0">Sinkronisasi pesanan belum didukung untuk platform ini.</div>

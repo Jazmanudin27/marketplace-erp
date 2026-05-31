@@ -29,8 +29,10 @@
                 <div class="d-flex flex-column gap-2 align-items-stretch align-items-lg-end">
                     <a href="{{ route('marketplace.sync-products', $account->id) }}" class="btn btn-primary">Sync Produk</a>
                     <a href="{{ route('marketplace.products', $account) }}" class="btn btn-outline-success">Lihat Produk</a>
-                    <a href="{{ route('marketplace.sync-orders', $account->id) }}" class="btn btn-success">Sync Pesanan</a>
-                    <a href="{{ route('marketplace.orders', $account) }}" class="btn btn-outline-success">Lihat Orders</a>
+                    @if (in_array($account->platform, ['shopee', 'tokopedia', 'tiktok']))
+                        <a href="{{ route('marketplace.sync-orders', $account->id) }}" class="btn btn-success">Sync Pesanan</a>
+                        <a href="{{ route('marketplace.orders', $account) }}" class="btn btn-outline-success">Lihat Orders</a>
+                    @endif
                     <form action="{{ route('marketplace.disconnect', $account) }}" method="POST"
                         onsubmit="return confirm('Yakin ingin memutus koneksi akun ini?')">
                         @csrf

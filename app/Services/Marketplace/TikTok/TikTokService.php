@@ -179,7 +179,6 @@ class TikTokService
             ],
             $account->access_token
         );
-        dd($response);
         $data = $response['data'] ?? $response;
 
         return $data['orders']
@@ -211,7 +210,11 @@ class TikTokService
                 'https://open-api.tiktokglobalshop.com' . $path . '?' . http_build_query($params),
                 $body
             );
-
+        dd([
+            'url' => 'https://open-api.tiktokglobalshop.com' . $path,
+            'query_params' => $params,
+            'body' => $body,
+        ]);
         $result = $response->json();
 
         if (($result['code'] ?? -1) !== 0) {

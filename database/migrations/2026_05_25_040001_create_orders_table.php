@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('orders', function (Blueprint $table) {
+        Schema::create('marketplace_order', function (Blueprint $table) {
             $table->id();
             $table->foreignId('company_id')->constrained()->onDelete('cascade');
             $table->string('marketplace_order_id');
@@ -28,14 +28,23 @@ return new class extends Migration
             $table->json('marketplace_data')->nullable();
             $table->timestamps();
 
-            $table->unique(['company_id', 'marketplace_order_id', 'marketplace']);
-            $table->index(['marketplace', 'marketplace_order_id']);
-            $table->index(['order_status', 'order_date']);
+            $table->unique(
+                ['company_id', 'marketplace_order_id', 'marketplace'],
+                'uq_mp_order_company_market_order_platform'
+            );
+            $table->index(
+                ['marketplace', 'marketplace_order_id'],
+                'idx_mp_order_platform_order_id'
+            );
+            $table->index(
+                ['order_status', 'order_date'],
+                'idx_mp_order_status_date'
+            );
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('orders');
+        Schema::dropIfExists('marketplace_order');
     }
 };

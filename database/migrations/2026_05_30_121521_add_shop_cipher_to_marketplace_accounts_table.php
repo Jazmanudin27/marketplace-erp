@@ -10,9 +10,11 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('marketplace_accounts', function (Blueprint $table) {
-            $table->string('shop_cipher')->nullable()->after('shop_id');
-        });
+        if (!Schema::hasColumn('marketplace_accounts', 'shop_cipher')) {
+            Schema::table('marketplace_accounts', function (Blueprint $table) {
+                $table->string('shop_cipher')->nullable()->after('shop_id');
+            });
+        }
     }
 
     /**
@@ -20,8 +22,10 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::table('marketplace_accounts', function (Blueprint $table) {
-            //
-        });
+        if (Schema::hasColumn('marketplace_accounts', 'shop_cipher')) {
+            Schema::table('marketplace_accounts', function (Blueprint $table) {
+                $table->dropColumn('shop_cipher');
+            });
+        }
     }
 };

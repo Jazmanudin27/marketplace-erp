@@ -10,6 +10,8 @@ class OrderItem extends Model
 {
     use HasFactory;
 
+    protected $table = 'marketplace_order_items';
+
     protected $fillable = [
         'order_id',
         'product_id',

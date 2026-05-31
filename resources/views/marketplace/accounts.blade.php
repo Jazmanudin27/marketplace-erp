@@ -16,8 +16,7 @@
         <div class="row align-items-center g-4">
             <div class="col-lg-8">
                 <h1 class="display-6 fw-bold mb-2">Kelola Akun Marketplace</h1>
-                <p class="text-muted mb-0">Hubungkan akun Shopee, Tokopedia, TikTok, atau Lazada untuk sinkronisasi produk.
-                </p>
+                <p class="text-muted mb-0">Hubungkan akun Shopee, Tokopedia, TikTok, atau Lazada untuk sinkronisasi produk.</p>
             </div>
             <div class="col-lg-4 text-lg-end">
                 <a href="{{ route('dashboard') }}" class="btn btn-outline-primary">Kembali ke Dashboard</a>
@@ -62,12 +61,9 @@
 
                             <div class="mt-auto d-grid gap-2">
                                 <a href="{{ route('marketplace.show', $account) }}" class="btn btn-primary">Lihat Detail</a>
-                                <a href="{{ route('marketplace.products', $account) }}" class="btn btn-outline-success">Lihat
-                                    Produk</a>
-                                <a href="{{ route('marketplace.orders', $account) }}" class="btn btn-outline-primary">Lihat
-                                    Orders</a>
-                                <form action="{{ route('marketplace.disconnect', $account) }}" method="POST"
-                                    onsubmit="return confirm('Apakah Anda yakin ingin memutus koneksi?')">
+                                <a href="{{ route('marketplace.products', $account) }}" class="btn btn-outline-success">Lihat Produk</a>
+                                <a href="{{ route('marketplace.orders', $account) }}" class="btn btn-outline-primary">Lihat Orders</a>
+                                <form action="{{ route('marketplace.disconnect', $account) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin memutus koneksi?')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-outline-danger w-100">Putus Hubung</button>

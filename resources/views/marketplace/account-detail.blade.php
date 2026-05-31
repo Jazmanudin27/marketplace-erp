@@ -12,7 +12,8 @@
             <div class="d-flex flex-column flex-lg-row justify-content-between gap-4">
                 <div>
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold" style="width: 64px; height: 64px; background: {{ $account->platform === 'shopee' ? '#f97316' : ($account->platform === 'tokopedia' ? '#16a34a' : ($account->platform === 'tiktok' ? '#111827' : '#0d6efd')) }};">
+                        <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold"
+                            style="width: 64px; height: 64px; background: {{ $account->platform === 'shopee' ? '#f97316' : ($account->platform === 'tokopedia' ? '#16a34a' : ($account->platform === 'tiktok' ? '#111827' : '#0d6efd')) }};">
                             {{ strtoupper(substr($account->platform, 0, 1)) }}
                         </div>
                         <div>
@@ -21,17 +22,17 @@
                         </div>
                     </div>
                     <span class="badge text-bg-primary me-2">{{ ucfirst($account->platform) }}</span>
-                    <span class="badge {{ $account->expired_at && $account->expired_at->isPast() ? 'text-bg-danger' : 'text-bg-success' }}">{{ $account->expired_at && $account->expired_at->isPast() ? 'Token Kadaluarsa' : 'Terhubung' }}</span>
+                    <span
+                        class="badge {{ $account->expired_at && $account->expired_at->isPast() ? 'text-bg-danger' : 'text-bg-success' }}">{{ $account->expired_at && $account->expired_at->isPast() ? 'Token Kadaluarsa' : 'Terhubung' }}</span>
                 </div>
 
                 <div class="d-flex flex-column gap-2 align-items-stretch align-items-lg-end">
                     <a href="{{ route('marketplace.sync-products', $account->id) }}" class="btn btn-primary">Sync Produk</a>
                     <a href="{{ route('marketplace.products', $account) }}" class="btn btn-outline-success">Lihat Produk</a>
-                    @if (in_array($account->platform, ['shopee', 'tokopedia']))
-                        <a href="{{ route('marketplace.sync-orders', $account->id) }}" class="btn btn-success">Sync Pesanan</a>
-                        <a href="{{ route('marketplace.orders', $account) }}" class="btn btn-outline-success">Lihat Orders</a>
-                    @endif
-                    <form action="{{ route('marketplace.disconnect', $account) }}" method="POST" onsubmit="return confirm('Yakin ingin memutus koneksi akun ini?')">
+                    <a href="{{ route('marketplace.sync-orders', $account->id) }}" class="btn btn-success">Sync Pesanan</a>
+                    <a href="{{ route('marketplace.orders', $account) }}" class="btn btn-outline-success">Lihat Orders</a>
+                    <form action="{{ route('marketplace.disconnect', $account) }}" method="POST"
+                        onsubmit="return confirm('Yakin ingin memutus koneksi akun ini?')">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-outline-danger w-100">Putuskan</button>
@@ -61,7 +62,8 @@
                     <h2 class="h5 fw-bold mb-4">Status Koneksi</h2>
                     <div class="d-grid gap-3 small">
                         <div><strong>Terhubung Sejak:</strong> {{ $account->created_at->format('d M Y H:i') }}</div>
-                        <div><strong>Token Kadaluarsa:</strong> {{ $account->expired_at ? $account->expired_at->format('d M Y H:i') : 'Tidak ada' }}</div>
+                        <div><strong>Token Kadaluarsa:</strong>
+                            {{ $account->expired_at ? $account->expired_at->format('d M Y H:i') : 'Tidak ada' }}</div>
                         <div><strong>Terakhir Diperbarui:</strong> {{ $account->updated_at->format('d M Y H:i') }}</div>
                     </div>
                 </div>

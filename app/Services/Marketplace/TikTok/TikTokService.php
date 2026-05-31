@@ -205,11 +205,6 @@ class TikTokService
             ->post($this->baseUrlOrder . $path . '?' . $queryString);
         $result = $response->json();
 
-        dd([
-            'http_status' => $response->status(),
-            'response_raw' => $response->body(),
-            'response_json' => $result,
-        ]);
         if (($result['code'] ?? -1) !== 0) {
             throw new \Exception($result['message'] ?? 'Gagal mengambil orders TikTok');
         }
@@ -220,9 +215,6 @@ class TikTokService
             ?? [];
     }
 
-    /**
-     * SIGN TikTok Shop (WAJIB sesuai format API)
-     */
     protected function generateSignOrder(string $path, array $query, string $jsonBody): string
     {
         $secret = config('services.tiktok.app_secret');

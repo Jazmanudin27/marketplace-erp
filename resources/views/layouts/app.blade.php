@@ -9,7 +9,45 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @else
+        <style>
+            html,
+            body {
+                min-height: 100%;
+            }
+
+            body {
+                font-family: 'Inter', sans-serif;
+                background: linear-gradient(180deg, #f8fafc 0%, #eef4ff 100%);
+            }
+
+            .app-shell {
+                min-height: 100vh;
+            }
+
+            .app-navbar {
+                background: linear-gradient(90deg, #0b2e59 0%, #0f5b9d 100%);
+            }
+
+            .app-main {
+                min-height: calc(100vh - 72px);
+            }
+
+            .page-card {
+                border: 0;
+                border-radius: 1.5rem;
+                box-shadow: 0 18px 55px rgba(15, 23, 42, 0.08);
+            }
+
+            .page-hero {
+                background: linear-gradient(135deg, rgba(13, 110, 253, 0.12), rgba(32, 201, 151, 0.08));
+                border: 1px solid rgba(13, 110, 253, 0.08);
+                border-radius: 1.5rem;
+            }
+        </style>
+    @endif
     @stack('styles')
 </head>
 <body class="app-shell">

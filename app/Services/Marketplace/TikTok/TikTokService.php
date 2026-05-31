@@ -93,29 +93,6 @@ class TikTokService
         );
     }
 
-    protected function sign(string $path, array $params): string
-    {
-        unset($params['sign']);
-
-        ksort($params);
-
-        $secret = config('services.tiktok.app_secret');
-
-        $string = $secret . $path;
-
-        foreach ($params as $key => $value) {
-            $string .= $key . $value;
-        }
-
-        $string .= $secret;
-
-        return hash_hmac(
-            'sha256',
-            $string,
-            $secret
-        );
-    }
-
     public function getProducts($account)
     {
         $path = '/product/202309/products/search';
@@ -124,20 +101,36 @@ class TikTokService
             'app_key' => config('services.tiktok.app_key'),
             'timestamp' => time(),
             'page_size' => 100,
+            'shop_cipher' => $account->shop_cipher,
         ];
 
-        $params['sign'] = $this->sign($path, $params);
+        $params['sign'] = $this->generateSign(
+            $path,
+            $params
+        );
+
+        $body = [
+            'status' => 'ALL',
+        ];
 
         $response = Http::withHeaders([
             'x-tts-access-token' => $account->access_token,
             'Content-Type' => 'application/json',
         ])->post(
-                'https://open-api.tiktokglobalshop.com' . $path .
-                '?' . http_build_query($params),
-                []
+                'https://open-api.tiktokglobalshop.com' .
+                $path .
+                '?' .
+                http_build_query($params),
+                $body
             );
-
+        dd([
+            'shop_id' => $account->shop_id,
+            'shop_cipher' => $account->shop_cipher,
+        ]);
         return [
+            'url' => 'https://open-api.tiktokglobalshop.com' . $path,
+            'query' => $params,
+            'body' => $body,
             'status' => $response->status(),
             'json' => $response->json(),
         ];

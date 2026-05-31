@@ -123,19 +123,21 @@ class TikTokService
                 http_build_query($params),
                 $body
             );
+
         dd([
-            'shop_id' => $account->shop_id,
-            'shop_cipher' => $account->shop_cipher,
-            'path' => $path,
-            'params' => $params,
-            'sign' => $params['sign'],
-        ]);
-        return [
             'url' => 'https://open-api.tiktokglobalshop.com' . $path,
             'query' => $params,
             'body' => $body,
             'status' => $response->status(),
             'json' => $response->json(),
-        ];
+            'raw' => $response->body(),
+        ]);
+        // return [
+        //     'url' => 'https://open-api.tiktokglobalshop.com' . $path,
+        //     'query' => $params,
+        //     'body' => $body,
+        //     'status' => $response->status(),
+        //     'json' => $response->json(),
+        // ];
     }
 }

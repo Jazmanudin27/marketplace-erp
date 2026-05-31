@@ -103,7 +103,7 @@ class MarketplaceConnectionController extends Controller
             | 2. GET SHOP INFO
             |--------------------------------------------------------------------------
             */
-            $path = '/seller/202309/shops';
+            $path = '/authorization/202309/shops';
 
             $timestamp = time();
 

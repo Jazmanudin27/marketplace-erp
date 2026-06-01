@@ -171,45 +171,73 @@ class TikTokService
         );
     }
 
-    public function getOrders(Request $request, $account)
-    {
-        $path = '/order/202309/orders/search';
+  public function getOrders(Request $request, $account)
+{
+    $path = '/order/202309/orders/search';
 
-       $orders = [];
-$pageToken = '';
+    $orders = [];
+    $pageToken = '';
 
-do {
+    do {
 
-    $body = [
-        'create_time_ge' => now()->subDays(30)->timestamp,
-        'create_time_lt' => now()->timestamp,
-        'page_size' => 50,
-        'page_token' => $pageToken,
-    ];
+        $body = [
+            'create_time_ge' => now()->subDays(30)->timestamp,
+            'create_time_lt' => now()->timestamp,
+            'page_size' => 50,
+        ];
 
-    $jsonBody = json_encode($body);
+        if (!empty($pageToken)) {
+            $body['page_token'] = $pageToken;
+        }
 
-    $query['sign'] = $this->generateSignOrder($path, $query, $jsonBody);
+        $jsonBody = json_encode($body);
 
-    $response = Http::withHeaders([
-        'x-tts-access-token' => $account->access_token,
-        'Content-Type' => 'application/json',
-    ])
-    ->withBody($jsonBody, 'application/json')
-    ->post($this->baseUrlOrder . $path . '?' . http_build_query($query));
+        $query = [
+            'app_key' => config('services.tiktok.app_key'),
+            'timestamp' => time(),
+            'shop_cipher' => $account->shop_cipher,
+        ];
 
-    $result = $response->json();
+        $query['sign'] = $this->generateSignOrder(
+            $path,
+            $query,
+            $jsonBody
+        );
 
-    $orders = array_merge(
-        $orders,
-        $result['data']['orders'] ?? []
-    );
+        $response = Http::withHeaders([
+            'x-tts-access-token' => $account->access_token,
+            'Content-Type' => 'application/json',
+        ])
+        ->withBody($jsonBody, 'application/json')
+        ->post(
+            $this->baseUrlOrder . $path . '?' . http_build_query($query)
+        );
 
-    $pageToken = $result['data']['next_page_token'] ?? '';
+        $result = $response->json();
 
-} while (!empty($pageToken));
-    }
+        if (($result['code'] ?? -1) !== 0) {
+            throw new \Exception(
+                $result['message'] ?? 'Gagal mengambil orders TikTok'
+            );
+        }
 
+        $currentOrders = $result['data']['orders'] ?? [];
+
+        $orders = array_merge($orders, $currentOrders);
+
+        // DEBUG
+        logger()->info('TikTok Orders Page', [
+            'count' => count($currentOrders),
+            'total' => count($orders),
+            'next_page_token' => $result['data']['next_page_token'] ?? null,
+        ]);
+
+        $pageToken = $result['data']['next_page_token'] ?? '';
+
+    } while (!empty($pageToken));
+
+    return $orders;
+}
     protected function generateSignOrder(string $path, array $query, string $jsonBody): string
     {
         $secret = config('services.tiktok.app_secret');

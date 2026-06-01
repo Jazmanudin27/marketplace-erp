@@ -94,7 +94,7 @@ class MarketplaceSyncController extends Controller
             }
 
             $rawOrders = $service->getOrders($account);
-            dd($rawOrders[0]);
+            dd($rawOrders);
             $syncedCount = 0;
             $skippedCount = 0;
 

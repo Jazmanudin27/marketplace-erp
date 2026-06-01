@@ -205,6 +205,7 @@ class TikTokService
             ->post($this->baseUrlOrder . $path . '?' . $queryString);
         $result = $response->json();
         dd([
+            'result' => $result,
             'total_count' => $result['data']['total_count'] ?? 0,
             'returned_orders' => count($result['data']['orders'] ?? []),
             'next_page_token' => $result['data']['next_page_token'] ?? null,

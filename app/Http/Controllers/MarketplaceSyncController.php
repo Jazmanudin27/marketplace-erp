@@ -113,6 +113,10 @@ class MarketplaceSyncController extends Controller
                         $orderData
                     );
 
+                    dd([
+                        'id_api' => $orderData['id'] ?? null,
+                        'dto_id' => $orderDto->marketplaceOrderId,
+                    ]);
                     // DEBUG
                     if (empty($orderDto->marketplaceOrderId)) {
 

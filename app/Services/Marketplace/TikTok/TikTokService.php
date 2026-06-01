@@ -214,6 +214,7 @@ class TikTokService
             'url' => $this->baseUrlOrder . $path . '?' . $queryString,
             'body' => $body,
             'response' => $result,
+            'query' => $query,
         ]);
         // dd([
         //     'status' => $response->status(),

@@ -184,7 +184,7 @@ class TikTokService
             'app_key' => config('services.tiktok.app_key'),
             'timestamp' => time(),
             'shop_cipher' => $account->shop_cipher,
-            'page_size' => 130,
+            'page_size' => 100,
             'page' => 1,
         ];
         $jsonBody = json_encode($body);

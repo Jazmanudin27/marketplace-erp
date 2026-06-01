@@ -81,172 +81,84 @@ class MarketplaceSyncController extends Controller
         return view('marketplace.products', compact('account', 'products'));
     }
 
-   public function syncOrders($id): RedirectResponse
-{
-    try {
-        $account = MarketplaceAccount::findOrFail($id);
-        $this->authorize('view', $account);
+    public function syncOrders($id): RedirectResponse
+    {
+        try {
+            $account = MarketplaceAccount::findOrFail($id);
+            $this->authorize('view', $account);
 
-        $service = MarketplaceManager::driver($account->platform);
+            $service = MarketplaceManager::driver($account->platform);
 
-        if (!method_exists($service, 'getOrders')) {
-            return back()->with('error', 'Platform ini belum support sync order');
-        }
+            if (!method_exists($service, 'getOrders')) {
+                throw new \Exception('Sinkronisasi pesanan belum didukung untuk platform ini');
+            }
 
-        // 🔥 FAKE DATA (SUDAH DISAMAKAN DENGAN DTO FIELD)
-        $rawOrders = [
-            [
-                'marketplace_order_id' => 'MP-1001',
-                'order_number' => 'INV-1001',
-                'customer_name' => 'Budi Santoso',
-                'customer_email' => 'budi@mail.com',
-                'customer_phone' => '08123456789',
-                'subtotal' => 150000,
-                'shipping_fee' => 10000,
-                'total_amount' => 160000,
-                'payment_method' => 'COD',
-                'payment_status' => 'paid',
-                'order_status' => 'processing',
-                'order_date' => now()->subDay(),
-                'shipping_address' => [
-                    'address' => 'Jl. Merdeka No 10',
-                    'city' => 'Bandung',
-                ],
-                'items' => [
-                    [
-                        'marketplace_product_id' => 'P-001',
-                        'name' => 'Kaos Polos',
-                        'qty' => 2,
-                        'price' => 50000,
-                        'subtotal' => 100000,
-                    ],
-                    [
-                        'marketplace_product_id' => 'P-002',
-                        'name' => 'Topi',
-                        'qty' => 1,
-                        'price' => 50000,
-                        'subtotal' => 50000,
-                    ],
-                ],
-            ],
-            [
-                'marketplace_order_id' => 'MP-1002',
-                'order_number' => 'INV-1002',
-                'customer_name' => 'Siti Aminah',
-                'customer_email' => 'siti@mail.com',
-                'customer_phone' => '082233445566',
-                'subtotal' => 80000,
-                'shipping_fee' => 12000,
-                'total_amount' => 92000,
-                'payment_method' => 'Transfer',
-                'payment_status' => 'pending',
-                'order_status' => 'pending',
-                'order_date' => now(),
-                'shipping_address' => [
-                    'address' => 'Jl. Asia Afrika',
-                    'city' => 'Jakarta',
-                ],
-                'items' => [
-                    [
-                        'marketplace_product_id' => 'P-003',
-                        'name' => 'Kemeja',
-                        'qty' => 1,
-                        'price' => 80000,
-                        'subtotal' => 80000,
-                    ],
-                ],
-            ],
-        ];
+            $rawOrders = $service->getOrders($account);
 
-        $syncedCount = 0;
-        $skippedCount = 0;
+            $syncedCount = 0;
+            $skippedCount = 0;
 
-        foreach ($rawOrders as $rawOrder) {
+            foreach (is_array($rawOrders) ? $rawOrders : [] as $rawOrder) {
+                try {
+                    $orderData = $this->resolveOrderPayload($service, $account, $rawOrder);
+                    $orderDto = $this->buildOrderDto($account->platform, $orderData);
 
-            try {
+                    if (empty($orderDto->marketplaceOrderId)) {
+                        $skippedCount++;
+                        continue;
+                    }
 
-                // 🔥 langsung pakai fake data
-                $orderData = $rawOrder;
-
-               $orderDto = (object) [
-    'marketplaceOrderId' => $orderData['marketplace_order_id'],
-    'marketplace' => $account->platform,
-    'orderNumber' => $orderData['order_number'] ?? $orderData['marketplace_order_id'],
-    'customerName' => $orderData['customer_name'],
-    'customerEmail' => $orderData['customer_email'],
-    'customerPhone' => $orderData['customer_phone'],
-    'shippingAddress' => $orderData['shipping_address'],
-    'subtotal' => $orderData['subtotal'],
-    'shippingFee' => $orderData['shipping_fee'],
-    'totalAmount' => $orderData['total_amount'],
-    'paymentMethod' => $orderData['payment_method'],
-    'paymentStatus' => $orderData['payment_status'],
-    'orderStatus' => $orderData['order_status'],
-    'orderDate' => $orderData['order_date'],
-];
-                // 🔥 DEBUG SAFE CHECK
-
-
-                DB::transaction(function () use ($account, $orderDto, $orderData) {
-
-                    $order = Order::updateOrCreate(
-                        [
-                            'company_id' => $account->company_id,
-                            'marketplace_order_id' => $orderDto->marketplaceOrderId,
-                            'marketplace' => $orderDto->marketplace,
-                        ],
-                        [
-                            'order_number' => $orderDto->orderNumber ?? $orderDto->marketplaceOrderId,
-                            'customer_name' => $orderDto->customerName ?? 'Customer',
-                            'customer_email' => $orderDto->customerEmail,
-                            'customer_phone' => $orderDto->customerPhone,
-                            'shipping_address' => json_encode($orderDto->shippingAddress),
-                            'subtotal' => $orderDto->subtotal,
-                            'shipping_fee' => $orderDto->shippingFee,
-                            'total_amount' => $orderDto->totalAmount,
-                            'payment_method' => $orderDto->paymentMethod ?? 'unknown',
-                            'payment_status' => $orderDto->paymentStatus,
-                            'order_status' => $orderDto->orderStatus,
-                            'order_date' => $this->normalizeOrderDate($orderDto->orderDate),
-                            'marketplace_data' => json_encode($orderData),
-                        ]
-                    );
-
-                    // 🔥 ITEMS
-                    foreach (($orderData['items'] ?? []) as $item) {
-                        $order->items()->updateOrCreate(
+                    DB::transaction(function () use ($account, $orderDto, $orderData) {
+                        $order = Order::updateOrCreate(
                             [
-                                'marketplace_product_id' => $item['marketplace_product_id'] ?? null,
+                                'company_id' => $account->company_id,
+                                'marketplace_order_id' => $orderDto->marketplaceOrderId,
+                                'marketplace' => $orderDto->marketplace,
                             ],
                             [
-                                'name' => $item['name'] ?? null,
-                                'qty' => $item['qty'] ?? 1,
-                                'price' => $item['price'] ?? 0,
-                                'subtotal' => $item['subtotal'] ?? 0,
+                                'order_number' => $orderDto->orderNumber ?: $orderDto->marketplaceOrderId,
+                                'customer_name' => $orderDto->customerName ?: 'Customer',
+                                'customer_email' => $orderDto->customerEmail,
+                                'customer_phone' => $orderDto->customerPhone,
+                                'shipping_address' => json_encode($orderDto->shippingAddress, JSON_UNESCAPED_UNICODE),
+                                'subtotal' => $orderDto->subtotal,
+                                'shipping_fee' => $orderDto->shippingFee,
+                                'total_amount' => $orderDto->totalAmount,
+                                'payment_method' => $orderDto->paymentMethod ?: 'unknown',
+                                'payment_status' => $orderDto->paymentStatus,
+                                'order_status' => $orderDto->orderStatus,
+                                'order_date' => $this->normalizeOrderDate($orderDto->orderDate),
+                                'marketplace_data' => $orderDto->marketplaceData,
                             ]
                         );
-                    }
-                });
 
-                $syncedCount++;
+                        $order->items()->delete();
 
-            } catch (\Throwable $e) {
-                $skippedCount++;
+                        foreach ($this->mapOrderItems($orderData) as $itemData) {
+                            $order->items()->create($itemData);
+                        }
+                    });
 
-                Log::warning('Order sync failed (FAKE)', [
-                    'message' => $e->getMessage(),
-                ]);
+                    $syncedCount++;
+                } catch (\Throwable $orderException) {
+                    $skippedCount++;
+
+                    Log::warning('Marketplace order sync skipped', [
+                        'platform' => $account->platform,
+                        'shop_id' => $account->shop_id,
+                        'message' => $orderException->getMessage(),
+                    ]);
+                }
             }
+
+            return redirect()
+                ->route('marketplace.orders', $account)
+                ->with('success', 'Pesanan berhasil disinkronkan. Total order tersimpan: ' . $syncedCount . ($skippedCount > 0 ? ', dilewati: ' . $skippedCount : ''));
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage());
         }
-
-        return redirect()
-            ->route('marketplace.orders', $account)
-            ->with('success', "Sync fake selesai. Berhasil: {$syncedCount}, dilewati: {$skippedCount}");
-
-    } catch (\Throwable $e) {
-        return back()->with('error', $e->getMessage());
     }
-}
+
     public function orders(MarketplaceAccount $account): View
     {
         $this->authorize('view', $account);

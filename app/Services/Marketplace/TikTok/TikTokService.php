@@ -208,7 +208,10 @@ class TikTokService
             ->withBody($jsonBody, 'application/json')
             ->post($this->baseUrlOrder . $path . '?' . $queryString);
         $result = $response->json();
-        dd($result);
+        dd([
+            'create_time_ge' => now()->subDays(30)->timestamp,
+            'create_time_lt' => now()->timestamp,
+        ]);
         // dd([
         //     'status' => $response->status(),
         //     'body' => $response->body(),

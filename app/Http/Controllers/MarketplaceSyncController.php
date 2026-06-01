@@ -102,6 +102,7 @@ class MarketplaceSyncController extends Controller
                     $orderData = $this->resolveOrderPayload($service, $account, $rawOrder);
                     $orderDto = $this->buildOrderDto($account->platform, $orderData);
 
+                    dd($orderDto);
                     if (empty($orderDto->marketplaceOrderId)) {
                         $skippedCount++;
                         continue;

@@ -36,22 +36,16 @@ return [
     ],
 
     'shopee' => [
-
         'host' => env('SHOPEE_HOST'),
-
         'partner_id' => env('SHOPEE_PARTNER_ID'),
-
         'partner_key' => env('SHOPEE_PARTNER_KEY'),
-
         'redirect_url' => env('SHOPEE_REDIRECT_URL'),
     ],
 
     'tokopedia' => [
-
+        'host' => env('TOKOPEDIA_HOST'),
         'client_id' => env('TOKOPEDIA_CLIENT_ID'),
-
         'client_secret' => env('TOKOPEDIA_CLIENT_SECRET'),
-
         'redirect_url' => env('TOKOPEDIA_REDIRECT_URL'),
     ],
 

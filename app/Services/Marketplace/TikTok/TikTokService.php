@@ -174,7 +174,7 @@ class TikTokService
         $path = '/order/202309/orders/search';
 
         $body = [
-            'create_time_ge' => (int) now()->subDays(1000)->timestamp,
+            'create_time_ge' => (int) now()->subDays(30)->timestamp,
             'create_time_lt' => (int) now()->timestamp,
         ];
 
@@ -208,6 +208,8 @@ class TikTokService
             'total_count' => $result['data']['total_count'] ?? 0,
             'returned_orders' => count($result['data']['orders'] ?? []),
             'next_page_token' => $result['data']['next_page_token'] ?? null,
+            'from' => date('Y-m-d H:i:s', $body['create_time_ge']),
+            'to' => date('Y-m-d H:i:s', $body['create_time_lt']),
         ]);
         // dd([
         //     'status' => $response->status(),

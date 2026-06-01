@@ -208,7 +208,7 @@ class TikTokService
             ->withBody($jsonBody, 'application/json')
             ->post($this->baseUrlOrder . $path . '?' . $queryString);
         $result = $response->json();
-        dd($result['data']);
+        dd($result);
         // dd([
         //     'status' => $response->status(),
         //     'body' => $response->body(),

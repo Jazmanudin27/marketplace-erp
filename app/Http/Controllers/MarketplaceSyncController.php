@@ -94,7 +94,7 @@ class MarketplaceSyncController extends Controller
             }
 
             $rawOrders = $service->getOrders($account);
-
+            dd($rawOrders[0]);
             $syncedCount = 0;
             $skippedCount = 0;
 
@@ -162,23 +162,19 @@ class MarketplaceSyncController extends Controller
     public function orders(MarketplaceAccount $account): View
     {
         $this->authorize('view', $account);
-
         $query = Order::query()
             ->with('items')
             ->where('company_id', $account->company_id)
             ->where('marketplace', $account->platform)
             ->orderByDesc('order_date')
             ->orderByDesc('id');
-
         $summary = [
             'total' => (clone $query)->count(),
             'pending' => (clone $query)->where('order_status', 'pending')->count(),
             'paid' => (clone $query)->where('payment_status', 'paid')->count(),
             'completed' => (clone $query)->whereIn('order_status', ['completed', 'delivered', 'shipped'])->count(),
         ];
-
         $orders = $query->paginate(10);
-
         return view('marketplace.orders', compact('account', 'orders', 'summary'));
     }
 

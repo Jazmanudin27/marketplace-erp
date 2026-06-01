@@ -93,10 +93,10 @@ class MarketplaceSyncController extends Controller
             return back()->with('error', 'Platform ini belum support sync order');
         }
 
-        // 🔥 FAKE DATA ORDERS (untuk testing)
+        // 🔥 FAKE DATA (SUDAH DISAMAKAN DENGAN DTO FIELD)
         $rawOrders = [
             [
-                'order_id' => 'MP-1001',
+                'marketplace_order_id' => 'MP-1001',
                 'order_number' => 'INV-1001',
                 'customer_name' => 'Budi Santoso',
                 'customer_email' => 'budi@mail.com',
@@ -107,7 +107,7 @@ class MarketplaceSyncController extends Controller
                 'payment_method' => 'COD',
                 'payment_status' => 'paid',
                 'order_status' => 'processing',
-                'order_date' => now()->subDay()->toDateTimeString(),
+                'order_date' => now()->subDay(),
                 'shipping_address' => [
                     'address' => 'Jl. Merdeka No 10',
                     'city' => 'Bandung',
@@ -130,7 +130,7 @@ class MarketplaceSyncController extends Controller
                 ],
             ],
             [
-                'order_id' => 'MP-1002',
+                'marketplace_order_id' => 'MP-1002',
                 'order_number' => 'INV-1002',
                 'customer_name' => 'Siti Aminah',
                 'customer_email' => 'siti@mail.com',
@@ -141,7 +141,7 @@ class MarketplaceSyncController extends Controller
                 'payment_method' => 'Transfer',
                 'payment_status' => 'pending',
                 'order_status' => 'pending',
-                'order_date' => now()->toDateTimeString(),
+                'order_date' => now(),
                 'shipping_address' => [
                     'address' => 'Jl. Asia Afrika',
                     'city' => 'Jakarta',
@@ -165,13 +165,20 @@ class MarketplaceSyncController extends Controller
 
             try {
 
-                // 🔥 langsung pakai data fake (tidak perlu resolve API)
+                // 🔥 langsung pakai fake data
                 $orderData = $rawOrder;
 
                 $orderDto = $this->buildOrderDto($account->platform, $orderData);
 
+                // 🔥 DEBUG SAFE CHECK
                 if (empty($orderDto->marketplaceOrderId)) {
                     $skippedCount++;
+
+                    Log::warning('Skipped order (missing marketplaceOrderId)', [
+                        'raw' => $orderData,
+                        'dto' => $orderDto,
+                    ]);
+
                     continue;
                 }
 
@@ -200,13 +207,18 @@ class MarketplaceSyncController extends Controller
                         ]
                     );
 
-                    // 🔥 items sync dari fake data
-                    foreach (($orderData['items'] ?? []) as $itemData) {
+                    // 🔥 ITEMS
+                    foreach (($orderData['items'] ?? []) as $item) {
                         $order->items()->updateOrCreate(
                             [
-                                'marketplace_product_id' => $itemData['marketplace_product_id'] ?? null,
+                                'marketplace_product_id' => $item['marketplace_product_id'] ?? null,
                             ],
-                            $itemData
+                            [
+                                'name' => $item['name'] ?? null,
+                                'qty' => $item['qty'] ?? 1,
+                                'price' => $item['price'] ?? 0,
+                                'subtotal' => $item['subtotal'] ?? 0,
+                            ]
                         );
                     }
                 });

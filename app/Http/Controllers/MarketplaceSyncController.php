@@ -186,16 +186,7 @@ class MarketplaceSyncController extends Controller
 ];
 dd($orderData, $orderDto);
                 // 🔥 DEBUG SAFE CHECK
-                if (empty($orderDto->marketplaceOrderId)) {
-                    $skippedCount++;
 
-                    Log::warning('Skipped order (missing marketplaceOrderId)', [
-                        'raw' => $orderData,
-                        'dto' => $orderDto,
-                    ]);
-
-                    continue;
-                }
 
                 DB::transaction(function () use ($account, $orderDto, $orderData) {
 

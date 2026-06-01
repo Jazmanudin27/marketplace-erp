@@ -2,9 +2,10 @@
 
 namespace App\Services\Marketplace\TikTok;
 
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
-
+use Illuminate\Http\Request;
 class TikTokService
 {
     protected $baseUrl = 'https://auth.tiktok-shops.com/api/v2';
@@ -169,7 +170,7 @@ class TikTokService
         );
     }
 
-    public function getOrders($account)
+    public function getOrders(Request $request, $account)
     {
         $path = '/order/202309/orders/search';
 
@@ -178,12 +179,17 @@ class TikTokService
             'create_time_lt' => now()->timestamp,
         ];
 
+        $from = $request->from;
+        $to = $request->to;
+
         $query = [
             'app_key' => config('services.tiktok.app_key'),
             'timestamp' => time(),
             'shop_cipher' => $account->shop_cipher,
             'page_size' => 50,
             'page' => 1,
+            'create_time_ge' => Carbon::parse($from)->timestamp,
+            'create_time_lt' => Carbon::parse($to)->timestamp,
         ];
         $jsonBody = json_encode($body);
 

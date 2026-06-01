@@ -155,7 +155,6 @@ class MarketplaceSyncController extends Controller
                         );
 
                         $order->items()->delete();
-
                         foreach ($this->mapOrderItems($orderData) as $itemData) {
                             $order->items()->create($itemData);
                         }
@@ -169,11 +168,8 @@ class MarketplaceSyncController extends Controller
                         'message' => $orderException->getMessage(),
                         'file' => $orderException->getFile(),
                         'line' => $orderException->getLine(),
-
                         'rawOrder' => $rawOrder,
-
                         'orderData' => $orderData ?? null,
-
                         'orderDto' => $orderDto ?? null,
                     ]);
                 }
@@ -273,22 +269,47 @@ class MarketplaceSyncController extends Controller
         $mappedItems = [];
 
         foreach ($items as $item) {
-            $quantity = (int) ($item['model_quantity_purchased'] ?? $item['quantity'] ?? $item['qty'] ?? 1);
-            $price = (float) ($item['model_discounted_price'] ?? $item['item_price'] ?? $item['original_price'] ?? $item['price'] ?? 0);
-            $subtotal = (float) ($item['subtotal'] ?? $item['total_price'] ?? $item['item_total'] ?? ($quantity * $price));
+
+            $quantity = (int) (
+                $item['model_quantity_purchased']
+                ?? $item['quantity']
+                ?? 1
+            );
+
+            $price = (float) (
+                $item['sale_price']
+                ?? $item['model_discounted_price']
+                ?? $item['item_price']
+                ?? $item['price']
+                ?? 0
+            );
+
+            $subtotal = $quantity * $price;
 
             $mappedItems[] = [
                 'product_id' => null,
-                'marketplace_product_id' => (string) ($item['product_id'] ?? $item['item_id'] ?? $item['model_id'] ?? $item['sku_id'] ?? ''),
-                'product_name' => $item['item_name'] ?? $item['name'] ?? $item['product_name'] ?? $item['title'] ?? 'Produk',
-                'sku' => $item['model_sku'] ?? $item['seller_sku'] ?? $item['sku'] ?? null,
+
+                'marketplace_product_id' => (string) (
+                    $item['product_id']
+                    ?? $item['item_id']
+                    ?? $item['model_id']
+                    ?? $item['sku_id']
+                    ?? ''
+                ),
+                'product_name' => $item['product_name']
+                    ?? $item['item_name']
+                    ?? $item['name']
+                    ?? 'Produk',
+                'sku' => $item['seller_sku']
+                    ?? $item['model_sku']
+                    ?? $item['sku']
+                    ?? null,
                 'quantity' => $quantity,
                 'price' => $price,
                 'subtotal' => $subtotal,
                 'marketplace_data' => $item,
             ];
         }
-
         return $mappedItems;
     }
 }

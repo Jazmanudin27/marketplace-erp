@@ -8,7 +8,8 @@
             <div class="page-hero p-4 p-lg-5">
                 <span class="badge text-bg-primary mb-3">Marketplace ERP</span>
                 <h1 class="display-5 fw-bold mb-3">Kelola akun marketplace dan produk dalam satu tempat.</h1>
-                <p class="lead text-muted mb-4">Bootstrap 5, jQuery, dan popup alert sudah disiapkan di layout aplikasi. Login untuk masuk ke dashboard dan sinkronisasi produk.</p>
+                <p class="lead text-muted mb-4">Bootstrap 5, jQuery, dan popup alert sudah disiapkan di layout aplikasi.
+                    Login untuk masuk ke dashboard dan sinkronisasi produk.</p>
                 <div class="d-flex flex-wrap gap-2">
                     @auth
                         <a href="{{ route('dashboard') }}" class="btn btn-primary btn-lg">Buka Dashboard</a>

@@ -31,6 +31,7 @@ class TokopediaService implements MarketplaceInterface
             'code' => $code,
             'client_id' => $this->clientId,
             'client_secret' => $this->clientSecret,
+            'redirect_uri' => $this->redirectUri,
         ]);
 
         return $response->json();

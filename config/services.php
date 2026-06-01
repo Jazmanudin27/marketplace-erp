@@ -46,7 +46,7 @@ return [
         'host' => env('TOKOPEDIA_HOST'),
         'client_id' => env('TOKOPEDIA_CLIENT_ID'),
         'client_secret' => env('TOKOPEDIA_CLIENT_SECRET'),
-        'redirect_url' => env('TOKOPEDIA_REDIRECT_URL'),
+        'redirect_uri' => env('TOKOPEDIA_REDIRECT_URL'),
     ],
 
     'tiktok' => [

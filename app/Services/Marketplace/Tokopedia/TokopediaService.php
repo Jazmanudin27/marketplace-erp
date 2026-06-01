@@ -205,13 +205,22 @@ class TokopediaService implements MarketplaceInterface
 
     public function getAuthorizationUrl(array $params = []): string
     {
+        $redirectUri = $params['redirect_uri'] ?? $this->redirectUri;
+
+        if (!$redirectUri) {
+            throw new \Exception('Redirect URI Tokopedia belum di-set');
+        }
+
         $query = http_build_query([
             'client_id' => $this->clientId,
-            'redirect_uri' => $params['redirect_uri'] ?? $this->redirectUri,
+            'redirect_uri' => $redirectUri,
             'response_type' => 'code',
             'state' => $params['state'] ?? '',
         ]);
-
+        dd([
+            'client_id' => $this->clientId,
+            'redirect_uri' => $this->redirectUri,
+        ]);
         return "https://accounts.tokopedia.com/authorize?$query";
     }
 }

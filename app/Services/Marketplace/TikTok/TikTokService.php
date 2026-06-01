@@ -211,6 +211,9 @@ class TikTokService
         dd([
             'create_time_ge' => now()->subDays(30)->timestamp,
             'create_time_lt' => now()->timestamp,
+            'url' => $this->baseUrlOrder . $path . '?' . $queryString,
+            'body' => $body,
+            'response' => $result,
         ]);
         // dd([
         //     'status' => $response->status(),

@@ -101,7 +101,7 @@ class TokopediaService implements MarketplaceInterface
     {
         $this->ensureValidToken($account);
 
-        $page = 0;
+        $page = 1;
         $limit = 50;
         $result = [];
 
@@ -133,7 +133,7 @@ class TokopediaService implements MarketplaceInterface
     {
         $this->ensureValidToken($account);
 
-        $page = 0;
+        $page = 1;
         $limit = 50;
         $orders = [];
 
@@ -143,7 +143,7 @@ class TokopediaService implements MarketplaceInterface
             ])->get($this->host . '/v2/orders', [
                         'page' => $page,
                         'per_page' => $limit,
-                        'from_date' => now()->subDays(1)->format('Y-m-d'),
+                        'from_date' => now()->subDays(30)->format('Y-m-d'),
                         'to_date' => now()->format('Y-m-d'),
                     ]);
 
@@ -205,7 +205,7 @@ class TokopediaService implements MarketplaceInterface
 
     public function getAuthorizationUrl(array $params = []): string
     {
-        $redirectUri = $params['redirect_uri'] ?? $this->redirectUri;
+        $redirectUri = $params['redirect_uri'] ?? $this->redirectUri ?? route('marketplace.callback');
 
         if (!$redirectUri) {
             throw new \Exception('Redirect URI Tokopedia belum di-set');

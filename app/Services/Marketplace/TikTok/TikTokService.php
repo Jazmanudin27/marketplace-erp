@@ -174,7 +174,7 @@ class TikTokService
         $path = '/order/202309/orders/search';
 
         $body = [
-            'create_time_ge' => now()->subYear()->timestamp,
+            'create_time_ge' => now()->subDays(30)->timestamp,
             'create_time_lt' => now()->timestamp,
         ];
 
@@ -182,7 +182,6 @@ class TikTokService
             'app_key' => config('services.tiktok.app_key'),
             'timestamp' => time(),
             'shop_cipher' => $account->shop_cipher,
-
             'page_size' => 50,
             'page' => 1,
         ];
@@ -204,13 +203,16 @@ class TikTokService
             ->withBody($jsonBody, 'application/json')
             ->post($this->baseUrlOrder . $path . '?' . $queryString);
         $result = $response->json();
+
+        $firstOrder = $result['data']['orders'][0] ?? null;
+
         dd([
-            'result' => $result,
             'total_count' => $result['data']['total_count'] ?? 0,
-            'returned_orders' => count($result['data']['orders'] ?? []),
-            'next_page_token' => $result['data']['next_page_token'] ?? null,
-            'from' => $body['create_time_ge'] ? date('Y-m-d H:i:s', $body['create_time_ge']) : null,
-            'to' => $body['create_time_lt'] ? date('Y-m-d H:i:s', $body['create_time_lt']) : null,
+            'first_order_id' => $firstOrder['id'] ?? null,
+            'first_order_create_time' => $firstOrder['create_time'] ?? null,
+            'first_order_date' => isset($firstOrder['create_time'])
+                ? date('Y-m-d H:i:s', $firstOrder['create_time'])
+                : null,
         ]);
         // dd([
         //     'status' => $response->status(),

@@ -174,8 +174,8 @@ class TikTokService
         $path = '/order/202309/orders/search';
 
         $body = [
-            'create_time_ge' => (int) now()->subDays(30)->timestamp,
-            'create_time_lt' => (int) now()->timestamp,
+            'create_time_ge' => now()->subYear()->timestamp,
+            'create_time_lt' => now()->timestamp,
         ];
 
         $query = [

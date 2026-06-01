@@ -94,21 +94,38 @@ class MarketplaceSyncController extends Controller
             }
 
             $rawOrders = $service->getOrders($account);
+
             $syncedCount = 0;
             $skippedCount = 0;
 
-            foreach (is_array($rawOrders) ? $rawOrders : [] as $rawOrder) {
-                try {
-                    $orderData = $this->resolveOrderPayload($service, $account, $rawOrder);
-                    $orderDto = $this->buildOrderDto($account->platform, $orderData);
+            foreach ((array) $rawOrders as $rawOrder) {
 
-                    dd($orderDto);
+                try {
+
+                    $orderData = $this->resolveOrderPayload(
+                        $service,
+                        $account,
+                        $rawOrder
+                    );
+
+                    $orderDto = $this->buildOrderDto(
+                        $account->platform,
+                        $orderData
+                    );
+
+                    // DEBUG
                     if (empty($orderDto->marketplaceOrderId)) {
-                        $skippedCount++;
-                        continue;
+
+                        dd([
+                            'ERROR' => 'marketplaceOrderId kosong',
+                            'rawOrder_id' => $rawOrder['id'] ?? null,
+                            'orderDto' => $orderDto,
+                            'orderData' => $orderData,
+                        ]);
                     }
 
                     DB::transaction(function () use ($account, $orderDto, $orderData) {
+
                         $order = Order::updateOrCreate(
                             [
                                 'company_id' => $account->company_id,
@@ -120,14 +137,19 @@ class MarketplaceSyncController extends Controller
                                 'customer_name' => $orderDto->customerName ?: 'Customer',
                                 'customer_email' => $orderDto->customerEmail,
                                 'customer_phone' => $orderDto->customerPhone,
-                                'shipping_address' => json_encode($orderDto->shippingAddress, JSON_UNESCAPED_UNICODE),
+                                'shipping_address' => json_encode(
+                                    $orderDto->shippingAddress,
+                                    JSON_UNESCAPED_UNICODE
+                                ),
                                 'subtotal' => $orderDto->subtotal,
                                 'shipping_fee' => $orderDto->shippingFee,
                                 'total_amount' => $orderDto->totalAmount,
                                 'payment_method' => $orderDto->paymentMethod ?: 'unknown',
                                 'payment_status' => $orderDto->paymentStatus,
                                 'order_status' => $orderDto->orderStatus,
-                                'order_date' => $this->normalizeOrderDate($orderDto->orderDate),
+                                'order_date' => $this->normalizeOrderDate(
+                                    $orderDto->orderDate
+                                ),
                                 'marketplace_data' => $orderDto->marketplaceData,
                             ]
                         );
@@ -140,23 +162,39 @@ class MarketplaceSyncController extends Controller
                     });
 
                     $syncedCount++;
+
                 } catch (\Throwable $orderException) {
 
                     dd([
                         'message' => $orderException->getMessage(),
                         'file' => $orderException->getFile(),
                         'line' => $orderException->getLine(),
-                        'order' => $rawOrder,
-                    ]);
 
+                        'rawOrder' => $rawOrder,
+
+                        'orderData' => $orderData ?? null,
+
+                        'orderDto' => $orderDto ?? null,
+                    ]);
                 }
             }
 
             return redirect()
                 ->route('marketplace.orders', $account)
-                ->with('success', 'Pesanan berhasil disinkronkan. Total order tersimpan: ' . $syncedCount . ($skippedCount > 0 ? ', dilewati: ' . $skippedCount : ''));
+                ->with(
+                    'success',
+                    'Pesanan berhasil disinkronkan. Total order tersimpan: '
+                    . $syncedCount
+                    . ($skippedCount > 0 ? ', dilewati: ' . $skippedCount : '')
+                );
+
         } catch (\Throwable $e) {
-            return back()->with('error', $e->getMessage());
+
+            dd([
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
         }
     }
 

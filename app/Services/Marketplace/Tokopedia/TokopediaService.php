@@ -12,29 +12,79 @@ class TokopediaService implements MarketplaceInterface
     protected string $host;
     protected string $clientId;
     protected string $clientSecret;
+    protected string $redirectUri;
 
     public function __construct()
     {
         $this->host = rtrim(config('services.tokopedia.host', 'https://fs.tokopedia.net'), '/');
         $this->clientId = config('services.tokopedia.client_id');
         $this->clientSecret = config('services.tokopedia.client_secret');
+        $this->redirectUri = config('services.tokopedia.redirect_uri');
+    }
+
+    /* =========================
+        AUTH FLOW
+    ========================= */
+
+    public function getAuthorizationUrl(array $params = []): string
+    {
+        $query = http_build_query([
+            'client_id' => $this->clientId,
+            'redirect_uri' => $params['redirect_uri'] ?? $this->redirectUri,
+            'response_type' => 'code',
+            'state' => $params['state'] ?? '',
+        ]);
+
+        return "https://accounts.tokopedia.com/authorize?$query";
+    }
+
+    public function exchangeCode(string $code)
+    {
+        $response = Http::post($this->host . '/token', [
+            'grant_type' => 'authorization_code',
+            'code' => $code,
+            'client_id' => $this->clientId,
+            'client_secret' => $this->clientSecret,
+        ]);
+
+        return $response->json();
+    }
+
+    public function refreshToken($account)
+    {
+        $response = Http::post($this->host . '/token', [
+            'grant_type' => 'refresh_token',
+            'client_id' => $this->clientId,
+            'client_secret' => $this->clientSecret,
+            'refresh_token' => $account->refresh_token,
+        ]);
+
+        $data = $response->json();
+
+        if (isset($data['access_token'])) {
+            $account->update([
+                'access_token' => $data['access_token'],
+                'refresh_token' => $data['refresh_token'] ?? $account->refresh_token,
+                'expired_at' => now()->addSeconds($data['expires_in']),
+            ]);
+        }
+
+        return $data;
     }
 
     protected function ensureValidToken($account): void
     {
-        if (!$account->expired_at) {
-            return;
-        }
+        if (!$account->expired_at) return;
 
         if (now()->addMinutes(5)->gte($account->expired_at)) {
-            Log::info('Refreshing Tokopedia token', [
-                'shop_id' => $account->shop_id
-            ]);
-
             $this->refreshToken($account);
             $account->refresh();
         }
     }
+
+    /* =========================
+        RESPONSE VALIDATION
+    ========================= */
 
     protected function validateResponse($response): array
     {
@@ -50,94 +100,74 @@ class TokopediaService implements MarketplaceInterface
         $data = $response->json();
 
         if (isset($data['header']['error_code']) && $data['header']['error_code'] !== '0') {
-            Log::error('Tokopedia API Business Error', [
-                'response' => $data
-            ]);
-
             throw new Exception($data['header']['message'] ?? 'Tokopedia API Error');
         }
 
         return $data;
     }
 
+    /* =========================
+        PRODUCTS
+    ========================= */
+
     public function getProducts($account)
     {
         $this->ensureValidToken($account);
 
-        $path = "/v2/products/fs";
-
-        $products = [];
         $page = 0;
-        $pageSize = 100;
+        $limit = 50;
+        $result = [];
 
         do {
-            $response = Http::retry(3, 1000)
-                ->timeout(30)
-                ->withHeaders([
-                    'Authorization' => 'Bearer ' . $account->access_token,
-                ])
-                ->get($this->host . $path, [
-                    'page' => $page,
-                    'per_page' => $pageSize,
-                ]);
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $account->access_token,
+            ])->get($this->host . '/v2/products/fs', [
+                'page' => $page,
+                'per_page' => $limit,
+            ]);
 
             $data = $this->validateResponse($response);
 
-            $productList = $data['data'] ?? [];
+            $items = $data['data'] ?? [];
 
-            $products = array_merge($products, $productList);
+            $result = array_merge($result, $items);
 
-            $hasMore = count($productList) === $pageSize;
             $page++;
+        } while (count($items) === $limit);
 
-            Log::info('Tokopedia Products Synced', [
-                'shop_id' => $account->shop_id,
-                'total_products' => count($productList),
-                'page' => $page,
-            ]);
-        } while ($hasMore);
-
-        return $products;
+        return $result;
     }
+
+    /* =========================
+        ORDERS
+    ========================= */
 
     public function getOrders($account)
     {
         $this->ensureValidToken($account);
 
-        $path = "/v2/orders";
-
-        $orders = [];
         $page = 0;
-        $pageSize = 100;
+        $limit = 50;
+        $orders = [];
 
         do {
-            $response = Http::retry(3, 1000)
-                ->timeout(30)
-                ->withHeaders([
-                    'Authorization' => 'Bearer ' . $account->access_token,
-                ])
-                ->get($this->host . $path, [
-                    'page' => $page,
-                    'per_page' => $pageSize,
-                    'from_date' => date('Y-m-d', strtotime('-1 day')),
-                    'to_date' => date('Y-m-d'),
-                ]);
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $account->access_token,
+            ])->get($this->host . '/v2/orders', [
+                'page' => $page,
+                'per_page' => $limit,
+                'from_date' => now()->subDays(1)->format('Y-m-d'),
+                'to_date' => now()->format('Y-m-d'),
+            ]);
 
             $data = $this->validateResponse($response);
 
-            $orderList = $data['data'] ?? [];
+            $items = $data['data'] ?? [];
 
-            $orders = array_merge($orders, $orderList);
+            $orders = array_merge($orders, $items);
 
-            $hasMore = count($orderList) === $pageSize;
             $page++;
-
-            Log::info('Tokopedia Orders Synced', [
-                'shop_id' => $account->shop_id,
-                'total_orders' => count($orderList),
-                'page' => $page,
-            ]);
-        } while ($hasMore);
+        } while (count($items) === $limit);
 
         return $orders;
     }
@@ -146,84 +176,36 @@ class TokopediaService implements MarketplaceInterface
     {
         $this->ensureValidToken($account);
 
-        $path = "/v2/orders/{$invoice}";
-
-        $response = Http::retry(3, 1000)
-            ->timeout(30)
-            ->withHeaders([
-                'Authorization' => 'Bearer ' . $account->access_token,
-            ])
-            ->get($this->host . $path);
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $account->access_token,
+        ])->get($this->host . "/v2/orders/{$invoice}");
 
         $data = $this->validateResponse($response);
 
         return $data['data'] ?? [];
     }
 
+    /* =========================
+        STOCK UPDATE
+    ========================= */
+
     public function syncStock($account, $product)
     {
         $this->ensureValidToken($account);
 
-        $path = "/v2/products/fs/update";
-
-        $response = Http::retry(3, 1000)
-            ->timeout(30)
-            ->withHeaders([
-                'Authorization' => 'Bearer ' . $account->access_token,
-            ])
-            ->post($this->host . $path, [
-                'product_id' => $product['product_id'],
-                'stock' => $product['stock'],
-            ]);
-
-        $data = $this->validateResponse($response);
-
-        Log::info('Tokopedia Stock Updated', [
-            'shop_id' => $account->shop_id,
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $account->access_token,
+        ])->post($this->host . '/v2/products/fs/update', [
             'product_id' => $product['product_id'],
+            'stock' => $product['stock'],
         ]);
 
-        return $data;
+        return $this->validateResponse($response);
     }
 
-    public function refreshToken($account)
-    {
-        $path = "/token";
-
-        $response = Http::retry(3, 1000)
-            ->timeout(30)
-            ->post($this->host . $path, [
-                'grant_type' => 'refresh_token',
-                'client_id' => $this->clientId,
-                'client_secret' => $this->clientSecret,
-                'refresh_token' => $account->refresh_token,
-            ]);
-
-        $data = $response->json();
-
-        if (isset($data['access_token'])) {
-            $account->update([
-                'access_token' => $data['access_token'],
-                'refresh_token' => $data['refresh_token'],
-                'expired_at' => now()->addSeconds($data['expires_in']),
-            ]);
-
-            Log::info('Tokopedia Token Refreshed', [
-                'shop_id' => $account->shop_id
-            ]);
-        }
-
-        return $data;
-    }
-
-    /**
-     * Tokopedia does not support the generic redirect OAuth in this implementation.
-     * Provide explicit message for callers.
-     */
-    public function getAuthorizationUrl(array $params = []): string
-    {
-        throw new \Exception('Tokopedia authorization via redirect is not supported in this flow.');
-    }
+    /* =========================
+        INTERFACE COMPAT
+    ========================= */
 
     public function getAuthUrl(array $params = []): string
     {

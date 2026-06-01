@@ -22,21 +22,7 @@ class TokopediaService implements MarketplaceInterface
         $this->redirectUri = config('services.tokopedia.redirect_uri');
     }
 
-    /* =========================
-        AUTH FLOW
-    ========================= */
 
-    public function getAuthorizationUrl(array $params = []): string
-    {
-        $query = http_build_query([
-            'client_id' => $this->clientId,
-            'redirect_uri' => $params['redirect_uri'] ?? $this->redirectUri,
-            'response_type' => 'code',
-            'state' => $params['state'] ?? '',
-        ]);
-
-        return "https://accounts.tokopedia.com/authorize?$query";
-    }
 
     public function exchangeCode(string $code)
     {
@@ -211,5 +197,21 @@ class TokopediaService implements MarketplaceInterface
     public function getAuthUrl(array $params = []): string
     {
         return $this->getAuthorizationUrl($params);
+    }
+
+    /* =========================
+       AUTH FLOW
+   ========================= */
+
+    public function getAuthorizationUrl(array $params = []): string
+    {
+        $query = http_build_query([
+            'client_id' => $this->clientId,
+            'redirect_uri' => $params['redirect_uri'] ?? $this->redirectUri,
+            'response_type' => 'code',
+            'state' => $params['state'] ?? '',
+        ]);
+
+        return "https://accounts.tokopedia.com/authorize?$query";
     }
 }

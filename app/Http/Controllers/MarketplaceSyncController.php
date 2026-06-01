@@ -140,13 +140,14 @@ class MarketplaceSyncController extends Controller
 
                     $syncedCount++;
                 } catch (\Throwable $orderException) {
-                    $skippedCount++;
 
-                    Log::warning('Marketplace order sync skipped', [
-                        'platform' => $account->platform,
-                        'shop_id' => $account->shop_id,
+                    dd([
                         'message' => $orderException->getMessage(),
+                        'file' => $orderException->getFile(),
+                        'line' => $orderException->getLine(),
+                        'order' => $rawOrder,
                     ]);
+
                 }
             }
 

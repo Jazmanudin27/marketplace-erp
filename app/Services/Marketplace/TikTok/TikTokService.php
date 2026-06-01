@@ -204,10 +204,10 @@ class TikTokService
             ->withBody($jsonBody, 'application/json')
             ->post($this->baseUrlOrder . $path . '?' . $queryString);
         $result = $response->json();
-        dd([
-            'status' => $response->status(),
-            'body' => $response->body(),
-        ]);
+        // dd([
+        //     'status' => $response->status(),
+        //     'body' => $response->body(),
+        // ]);
         if (($result['code'] ?? -1) !== 0) {
             throw new \Exception($result['message'] ?? 'Gagal mengambil orders TikTok');
         }

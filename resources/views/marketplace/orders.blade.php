@@ -7,7 +7,9 @@
         <div class="row align-items-center g-4">
             <div class="col-lg-8">
                 <h1 class="display-6 fw-bold mb-2">Sinkronisasi Pesanan</h1>
-                <p class="text-muted mb-0">Daftar pesanan untuk akun {{ $account->shop_name ?? ucfirst($account->platform) }} yang tersimpan di tabel orders.</p>
+                <p class="text-muted mb-0">Daftar pesanan untuk akun
+                    {{ $account->shop_name ?? ucfirst($account->platform) }} yang tersimpan di tabel orders.
+                </p>
             </div>
             <div class="col-lg-4 text-lg-end">
                 @if (in_array($account->platform, ['shopee', 'tokopedia', 'tiktok']))
@@ -96,7 +98,8 @@
                                     <td>Rp {{ number_format((float) $order->total_amount, 0, ',', '.') }}</td>
                                     <td>{{ $order->items->count() }}</td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#orderModal{{ $order->id }}">Detail</button>
+                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                                            data-bs-target="#orderModal{{ $order->id }}">Detail</button>
                                     </td>
                                 </tr>
                             @endforeach
@@ -130,9 +133,15 @@
                                                     <div><strong>Status:</strong> {{ $order->order_status }}</div>
                                                     <div><strong>Pembayaran:</strong> {{ $order->payment_status }}</div>
                                                     <div><strong>Metode Bayar:</strong> {{ $order->payment_method }}</div>
-                                                    <div><strong>Subtotal:</strong> Rp {{ number_format((float) $order->subtotal, 0, ',', '.') }}</div>
-                                                    <div><strong>Ongkir:</strong> Rp {{ number_format((float) $order->shipping_fee, 0, ',', '.') }}</div>
-                                                    <div><strong>Total:</strong> Rp {{ number_format((float) $order->total_amount, 0, ',', '.') }}</div>
+                                                    <div><strong>Subtotal:</strong> Rp
+                                                        {{ number_format((float) $order->subtotal, 0, ',', '.') }}
+                                                    </div>
+                                                    <div><strong>Ongkir:</strong> Rp
+                                                        {{ number_format((float) $order->shipping_fee, 0, ',', '.') }}
+                                                    </div>
+                                                    <div><strong>Total:</strong> Rp
+                                                        {{ number_format((float) $order->total_amount, 0, ',', '.') }}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -144,10 +153,14 @@
                                                     <div><strong>Email:</strong> {{ $order->customer_email ?? '-' }}</div>
                                                     <div><strong>Phone:</strong> {{ $order->customer_phone ?? '-' }}</div>
                                                     <div><strong>Penerima:</strong> {{ $shippingAddress['name'] ?? '-' }}</div>
-                                                    <div><strong>Alamat:</strong> {{ $shippingAddress['address'] ?? '-' }}</div>
+                                                    <div>
+                                                        <strong>Alamat:</strong>
+                                                        {{ \Illuminate\Support\Str::limit($shippingAddress['address'] ?? '-', 100, '') }}
+                                                    </div>
                                                     <div><strong>Kota:</strong> {{ $shippingAddress['city'] ?? '-' }}</div>
                                                     <div><strong>Provinsi:</strong> {{ $shippingAddress['province'] ?? '-' }}</div>
-                                                    <div><strong>Kode Pos:</strong> {{ $shippingAddress['postal_code'] ?? '-' }}</div>
+                                                    <div><strong>Kode Pos:</strong> {{ $shippingAddress['postal_code'] ?? '-' }}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -196,7 +209,8 @@
                     @if (in_array($account->platform, ['shopee', 'tokopedia', 'tiktok']))
                         <a href="{{ route('marketplace.sync-orders', $account->id) }}" class="btn btn-primary">Sync Pesanan</a>
                     @else
-                        <div class="alert alert-warning d-inline-block mb-0">Sinkronisasi pesanan belum didukung untuk platform ini.</div>
+                        <div class="alert alert-warning d-inline-block mb-0">Sinkronisasi pesanan belum didukung untuk platform ini.
+                        </div>
                     @endif
                 </div>
             @endif

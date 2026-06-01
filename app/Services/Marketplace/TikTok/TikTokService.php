@@ -171,7 +171,7 @@ class TikTokService
         );
     }
 
-    public function getOrders(Request $request, $account)
+    public function getOrders($account)
     {
         $path = '/order/202309/orders/search';
 
@@ -179,9 +179,6 @@ class TikTokService
             'create_time_ge' => now()->subDays(30)->timestamp,
             'create_time_lt' => now()->timestamp,
         ];
-
-        $from = $request->from;
-        $to = $request->to;
 
         $query = [
             'app_key' => config('services.tiktok.app_key'),
@@ -194,7 +191,6 @@ class TikTokService
 
         $query['sign'] = $this->generateSignOrder($path, $query, $jsonBody);
 
-        // 🔥 MANUAL BUILD QUERY (IMPORTANT)
         $queryString = '';
         foreach ($query as $key => $value) {
             $queryString .= $key . '=' . $value . '&';
@@ -208,16 +204,6 @@ class TikTokService
             ->withBody($jsonBody, 'application/json')
             ->post($this->baseUrlOrder . $path . '?' . $queryString);
         $result = $response->json();
-        dd([
-            'create_time_ge' => now()->subDays(30)->timestamp,
-            'create_time_lt' => now()->timestamp,
-            'url' => $this->baseUrlOrder . $path . '?' . $queryString,
-            'body' => $body,
-            'response' => $result,
-            'query' => $query,
-            'status' => $response->status(),
-            'raw' => $response->body(),
-        ]);
         // dd([
         //     'status' => $response->status(),
         //     'body' => $response->body(),

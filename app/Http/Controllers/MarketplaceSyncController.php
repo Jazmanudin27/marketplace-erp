@@ -82,7 +82,7 @@ class MarketplaceSyncController extends Controller
         return view('marketplace.products', compact('account', 'products'));
     }
 
-    public function syncOrders(Request $request, $id)
+    public function syncOrders($id)
     {
         try {
             $account = MarketplaceAccount::findOrFail($id);
@@ -94,7 +94,7 @@ class MarketplaceSyncController extends Controller
                 throw new \Exception('Sinkronisasi pesanan belum didukung untuk platform ini');
             }
 
-            $rawOrders = $service->getOrders($request, $account);
+            $rawOrders = $service->getOrders($account);
 
             $syncedCount = 0;
             $skippedCount = 0;

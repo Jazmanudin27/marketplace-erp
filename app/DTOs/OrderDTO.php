@@ -21,7 +21,8 @@ class OrderDTO
         public readonly string $orderDate,
         public readonly array $items,
         public readonly array $marketplaceData,
-    ) {}
+    ) {
+    }
 
     public static function fromShopee(array $data): self
     {
@@ -55,28 +56,51 @@ class OrderDTO
     public static function fromTikTok(array $data): self
     {
         return new self(
-            marketplaceOrderId: $data['order_id'] ?? '',
+            marketplaceOrderId: (string) ($data['id'] ?? ''),
+
             marketplace: 'tiktok',
-            orderNumber: $data['order_number'] ?? '',
-            customerName: $data['customer_name'] ?? '',
-            customerEmail: $data['customer_email'] ?? null,
-            customerPhone: $data['customer_phone'] ?? null,
+
+            orderNumber: (string) ($data['id'] ?? ''),
+
+            customerName: $data['recipient_address']['name']
+            ?? $data['buyer_email']
+            ?? 'Customer',
+
+            customerEmail: $data['buyer_email'] ?? null,
+
+            customerPhone: $data['recipient_address']['phone_number'] ?? null,
+
             shippingAddress: [
-                'name' => $data['shipping_address']['name'] ?? '',
-                'phone' => $data['shipping_address']['phone'] ?? '',
-                'address' => $data['shipping_address']['address'] ?? '',
-                'city' => $data['shipping_address']['city'] ?? '',
-                'province' => $data['shipping_address']['province'] ?? '',
-                'postal_code' => $data['shipping_address']['postal_code'] ?? '',
+                'name' => $data['recipient_address']['name'] ?? '',
+                'phone' => $data['recipient_address']['phone_number'] ?? '',
+                'address' => $data['recipient_address']['full_address'] ?? '',
+                'city' => '',
+                'province' => $data['recipient_address']['region_code'] ?? '',
+                'postal_code' => $data['recipient_address']['postal_code'] ?? '',
             ],
-            subtotal: (float) ($data['subtotal'] ?? 0),
-            shippingFee: (float) ($data['shipping_fee'] ?? 0),
-            totalAmount: (float) ($data['total_amount'] ?? 0),
-            paymentMethod: $data['payment_method'] ?? '',
-            paymentStatus: $data['payment_status'] ?? 'pending',
-            orderStatus: $data['order_status'] ?? 'pending',
-            orderDate: $data['order_date'] ?? now()->toDateTimeString(),
-            items: $data['items'] ?? [],
+
+            subtotal: (float) ($data['payment']['sub_total'] ?? 0),
+
+            shippingFee: (float) ($data['payment']['shipping_fee'] ?? 0),
+
+            totalAmount: (float) ($data['payment']['total_amount'] ?? 0),
+
+            paymentMethod: $data['payment_method_name'] ?? '',
+
+            paymentStatus: match ($data['status'] ?? '') {
+                'COMPLETED', 'DELIVERED' => 'paid',
+                'AWAITING_SHIPMENT' => 'paid',
+                default => 'pending',
+            },
+
+            orderStatus: strtolower($data['status'] ?? 'pending'),
+
+            orderDate: isset($data['create_time'])
+            ? date('Y-m-d H:i:s', (int) $data['create_time'])
+            : now()->toDateTimeString(),
+
+            items: $data['line_items'] ?? [],
+
             marketplaceData: $data,
         );
     }

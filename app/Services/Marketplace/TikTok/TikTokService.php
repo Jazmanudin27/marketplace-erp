@@ -175,12 +175,13 @@ class TikTokService
     {
         $path = '/order/202309/orders/search';
 
+        $body = [
+            'create_time_ge' => now()->subDays(10000)->timestamp,
+            'create_time_lt' => now()->timestamp,
+        ];
+
         $from = $request->from;
         $to = $request->to;
-        $body = [
-            'create_time_ge' => Carbon::parse($from)->timestamp,
-            'create_time_lt' => Carbon::parse($to)->timestamp,
-        ];
 
         $query = [
             'app_key' => config('services.tiktok.app_key'),

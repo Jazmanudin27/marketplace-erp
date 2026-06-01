@@ -34,10 +34,6 @@ class MarketplaceConnectionController extends Controller
     public function connect(Request $request)
     {
         try {
-            $request->validate([
-                'platform' => 'required|in:shopee,tiktok'
-            ]);
-
             $platform = $request->platform;
 
             $manager = new MarketplaceManager();

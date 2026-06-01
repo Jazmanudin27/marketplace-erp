@@ -74,7 +74,8 @@ class TokopediaService implements MarketplaceInterface
 
     protected function ensureValidToken($account): void
     {
-        if (!$account->expired_at) return;
+        if (!$account->expired_at)
+            return;
 
         if (now()->addMinutes(5)->gte($account->expired_at)) {
             $this->refreshToken($account);
@@ -122,9 +123,9 @@ class TokopediaService implements MarketplaceInterface
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $account->access_token,
             ])->get($this->host . '/v2/products/fs', [
-                'page' => $page,
-                'per_page' => $limit,
-            ]);
+                        'page' => $page,
+                        'per_page' => $limit,
+                    ]);
 
             $data = $this->validateResponse($response);
 
@@ -154,11 +155,11 @@ class TokopediaService implements MarketplaceInterface
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $account->access_token,
             ])->get($this->host . '/v2/orders', [
-                'page' => $page,
-                'per_page' => $limit,
-                'from_date' => now()->subDays(1)->format('Y-m-d'),
-                'to_date' => now()->format('Y-m-d'),
-            ]);
+                        'page' => $page,
+                        'per_page' => $limit,
+                        'from_date' => now()->subDays(1)->format('Y-m-d'),
+                        'to_date' => now()->format('Y-m-d'),
+                    ]);
 
             $data = $this->validateResponse($response);
 
@@ -196,9 +197,9 @@ class TokopediaService implements MarketplaceInterface
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $account->access_token,
         ])->post($this->host . '/v2/products/fs/update', [
-            'product_id' => $product['product_id'],
-            'stock' => $product['stock'],
-        ]);
+                    'product_id' => $product['product_id'],
+                    'stock' => $product['stock'],
+                ]);
 
         return $this->validateResponse($response);
     }

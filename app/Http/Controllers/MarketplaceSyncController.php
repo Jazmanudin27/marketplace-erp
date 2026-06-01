@@ -94,7 +94,7 @@ class MarketplaceSyncController extends Controller
                 throw new \Exception('Sinkronisasi pesanan belum didukung untuk platform ini');
             }
 
-            $rawOrders = $service->getOrders($account);
+            $rawOrders = $service->getOrders($request, $account);
 
             $syncedCount = 0;
             $skippedCount = 0;

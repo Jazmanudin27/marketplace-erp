@@ -174,7 +174,7 @@ class TikTokService
         $path = '/order/202309/orders/search';
 
         $body = [
-            'create_time_ge' => (int) now()->subDays(90)->timestamp,
+            'create_time_ge' => (int) now()->subDays(100)->timestamp,
             'create_time_lt' => (int) now()->timestamp,
         ];
 

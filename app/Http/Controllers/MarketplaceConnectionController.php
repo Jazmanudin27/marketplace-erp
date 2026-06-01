@@ -39,7 +39,7 @@ class MarketplaceConnectionController extends Controller
             $manager = new MarketplaceManager();
 
             $driver = $manager->driver($platform);
-
+dd($platform, $driver);
             $authUrl = $driver->getAuthUrl();
 
             return redirect()->away($authUrl);

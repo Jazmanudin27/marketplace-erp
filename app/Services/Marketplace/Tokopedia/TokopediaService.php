@@ -217,10 +217,7 @@ class TokopediaService implements MarketplaceInterface
             'response_type' => 'code',
             'state' => $params['state'] ?? '',
         ]);
-        dd([
-            'client_id' => $this->clientId,
-            'redirect_uri' => $this->redirectUri,
-        ]);
+
         return "https://accounts.tokopedia.com/authorize?$query";
     }
 }

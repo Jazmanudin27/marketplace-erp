@@ -168,8 +168,22 @@ class MarketplaceSyncController extends Controller
                 // 🔥 langsung pakai fake data
                 $orderData = $rawOrder;
 
-                $orderDto = $this->buildOrderDto($account->platform, $orderData);
-
+               $orderDto = (object) [
+    'marketplaceOrderId' => $orderData['marketplace_order_id'],
+    'marketplace' => $account->platform,
+    'orderNumber' => $orderData['order_number'] ?? $orderData['marketplace_order_id'],
+    'customerName' => $orderData['customer_name'],
+    'customerEmail' => $orderData['customer_email'],
+    'customerPhone' => $orderData['customer_phone'],
+    'shippingAddress' => $orderData['shipping_address'],
+    'subtotal' => $orderData['subtotal'],
+    'shippingFee' => $orderData['shipping_fee'],
+    'totalAmount' => $orderData['total_amount'],
+    'paymentMethod' => $orderData['payment_method'],
+    'paymentStatus' => $orderData['payment_status'],
+    'orderStatus' => $orderData['order_status'],
+    'orderDate' => $orderData['order_date'],
+];
                 // 🔥 DEBUG SAFE CHECK
                 if (empty($orderDto->marketplaceOrderId)) {
                     $skippedCount++;

@@ -39,7 +39,9 @@ class MarketplaceConnectionController extends Controller
             $manager = new MarketplaceManager();
 
             $driver = $manager->driver($platform);
-dd($platform, $driver);
+            dd($driver->getAuthUrl([
+                'redirect_uri' => 'https://demoaspartech.com/marketplace/callback'
+            ]));
             $authUrl = $driver->getAuthUrl();
 
             return redirect()->away($authUrl);

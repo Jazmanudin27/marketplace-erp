@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use Illuminate\Http\Request;
 
 class MarketplaceSyncController extends Controller
 {
@@ -81,7 +82,7 @@ class MarketplaceSyncController extends Controller
         return view('marketplace.products', compact('account', 'products'));
     }
 
-    public function syncOrders($id): RedirectResponse
+    public function syncOrders(Request $request, $id)
     {
         try {
             $account = MarketplaceAccount::findOrFail($id);

@@ -6,6 +6,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
+
 class TikTokService
 {
     protected $baseUrl = 'https://auth.tiktok-shops.com/api/v2';

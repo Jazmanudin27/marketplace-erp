@@ -265,7 +265,11 @@ class MarketplaceSyncController extends Controller
 
     private function mapOrderItems(array $orderData): array
     {
-        $items = $orderData['item_list'] ?? $orderData['items'] ?? $orderData['products'] ?? [];
+        $items = $orderData['item_list']
+            ?? $orderData['items']
+            ?? $orderData['products']
+            ?? $orderData['line_items']
+            ?? [];
         $mappedItems = [];
 
         foreach ($items as $item) {

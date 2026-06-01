@@ -215,6 +215,8 @@ class TikTokService
             'body' => $body,
             'response' => $result,
             'query' => $query,
+            'status' => $response->status(),
+            'raw' => $response->body(),
         ]);
         // dd([
         //     'status' => $response->status(),

@@ -57,19 +57,13 @@ class OrderDTO
     {
         return new self(
             marketplaceOrderId: (string) ($data['id'] ?? ''),
-
             marketplace: 'tiktok',
-
             orderNumber: (string) ($data['id'] ?? ''),
-
             customerName: $data['recipient_address']['name']
             ?? $data['buyer_email']
             ?? 'Customer',
-
             customerEmail: $data['buyer_email'] ?? null,
-
             customerPhone: $data['recipient_address']['phone_number'] ?? null,
-
             shippingAddress: [
                 'name' => $data['recipient_address']['name'] ?? '',
                 'phone' => $data['recipient_address']['phone_number'] ?? '',
@@ -80,7 +74,6 @@ class OrderDTO
             ],
 
             subtotal: (float) ($data['payment']['sub_total'] ?? 0),
-
             shippingFee: (float) ($data['payment']['shipping_fee'] ?? 0),
 
             totalAmount: (float) ($data['payment']['total_amount'] ?? 0),
